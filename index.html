@@ -186,6 +186,9 @@ var PRESETS={
 function presetRoles(type){return PRESETS[type].roles.map(function(r){var c=JSON.parse(JSON.stringify(r));c.id=uid();return c})}
 
 /* ---------- state ---------- */
+var FIREBASE_CONFIG={"apiKey": "AIzaSyCbZXq-ltDUquFrmWgMJEfFlioSASGA-sM", "authDomain": "pantheon-planner.firebaseapp.com", "projectId": "pantheon-planner", "storageBucket": "pantheon-planner.firebasestorage.app", "messagingSenderId": "865836657206", "appId": "1:865836657206:web:d294ef724c8f4eaa434697"}; /*FIREBASE_CONFIG*/
+var CLOUD=!!(FIREBASE_CONFIG&&FIREBASE_CONFIG.projectId);
+var cloud={ready:false,user:null,authKnown:false,status:'connecting',empty:false,pending:0,loaded:{members:false,events:false,settings:false},synced:{members:{},events:{},settings:null},renderPending:false};
 var embedded={rev:0,alliance:'',members:[],events:[]};
 try{embedded=JSON.parse(document.getElementById('state').textContent)}catch(e){}
 var KEY='ksplanner:'+(embedded.fileId||'blank');
@@ -196,6 +199,14 @@ if(local&&local.rev>embedded.rev){
   var eh=embedded.lock&&embedded.lock.hash,lh=local.lock&&local.lock.hash;
   /* a locked shared file can't be bypassed by an older unlocked copy in this browser */
   if(!eh||lh===eh||storedUnlock===eh||(lh&&storedUnlock===lh))state=local;
+}
+var seed=null;
+if(CLOUD){
+  seed=JSON.parse(JSON.stringify(embedded));
+  var CKEY='ksplanner-cloud:'+FIREBASE_CONFIG.projectId;
+  var cached=lsGet(CKEY);
+  state=cached?{alliance:cached.alliance||'',members:cached.members||[],events:cached.events||[]}:JSON.parse(JSON.stringify(embedded));
+  delete state.lock;
 }
 state.members=state.members||[];state.events=state.events||[];
 var dlRev=lsGet(KEY+':dl')||embedded.rev;
@@ -210,14 +221,60 @@ function tierOf(m){var s=sortedMembers();var i=s.indexOf(m);var n=s.length||1;if
 
 function sha256(ascii){function rr(v,a){return(v>>>a)|(v<<(32-a))}var mp=Math.pow,mw=mp(2,32),i,j,result='',words=[],bl=ascii.length*8;var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pl=k.length,ic={};for(var c=2;pl<64;c++){if(!ic[c]){for(i=0;i<313;i+=c)ic[i]=c;hash[pl]=(mp(c,.5)*mw)|0;k[pl++]=(mp(c,1/3)*mw)|0}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(i=0;i<ascii.length;i++){j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=((bl/mw)|0);words[words.length]=(bl);for(j=0;j<words.length;){var w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0}for(i=0;i<8;i++)hash[i]=(hash[i]+oh[i])|0}for(i=0;i<8;i++)for(j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16)}return result}
 function hashPw(salt,pw){return sha256(unescape(encodeURIComponent(salt+'|'+pw)))}
-function isLocked(){return !!(state.lock&&state.lock.hash)&&storedUnlock!==state.lock.hash}
+function isLocked(){if(CLOUD)return !(cloud.ready&&cloud.user);return !!(state.lock&&state.lock.hash)&&storedUnlock!==state.lock.hash}
 function unlockWith(h,remember){storedUnlock=h;try{sessionStorage.setItem(KEY+':unlock',h);if(remember)localStorage.setItem(KEY+':unlock',h)}catch(e){}}
 function lockNow(){storedUnlock=null;try{sessionStorage.removeItem(KEY+':unlock');localStorage.removeItem(KEY+':unlock')}catch(e){}}
-var ALLOW='[data-allow],[data-f],[data-act=brief],[data-act=login],[data-act=closelogin],[data-sact=export],[data-form=login]';
+var ALLOW='[data-allow],[data-f],[data-act=brief],[data-act=login],[data-act=logout],[data-act=closelogin],[data-sact=export],[data-form=login]';
 function guard(ev){if(!isLocked())return;var t=ev.target;if(!t||!t.closest)return;if(t.closest(ALLOW))return;
   if(t.closest('[data-act],[data-sact],[data-mf],[data-ef],[data-rf],[data-move],[data-act-change],[data-sf],form,textarea')){ev.stopImmediatePropagation();if(ev.type==='submit'||ev.type==='click')ev.preventDefault()}}
 ['click','change','submit','input','keydown'].forEach(function(t){root.addEventListener(t,guard,true)});
-function persist(){state.rev=Date.now();lsSet(KEY,state);dirty=true}
+function persist(){if(CLOUD){syncNow();saveCloudCache();return}state.rev=Date.now();lsSet(KEY,state);dirty=true}
+
+/* ---------- cloud (Firebase) ---------- */
+function stable(o){if(Array.isArray(o))return '['+o.map(stable).join(',')+']';if(o&&typeof o==='object'){return '{'+Object.keys(o).filter(function(k){return o[k]!==undefined}).sort().map(function(k){return JSON.stringify(k)+':'+stable(o[k])}).join(',')+'}'}return JSON.stringify(o===undefined?null:o)}
+function saveCloudCache(){if(CLOUD)lsSet(CKEY,{alliance:state.alliance,members:state.members,events:state.events})}
+function isEditing(){var a=document.activeElement;return !!(a&&root.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=='checkbox'&&!a.closest('.modal'))}
+function safeRender(){if(isEditing()){cloud.renderPending=true;return}render()}
+root.addEventListener('focusout',function(){setTimeout(function(){if(cloud.renderPending&&!isEditing()){cloud.renderPending=false;render()}},0)});
+function cloudErr(e){cloud.status='error';cloud.err=(e&&(e.code||e.message))||String(e);safeRender()}
+function applyRemote(kind,arr){
+  cloud.loaded[kind]=true;cloud.synced[kind]={};
+  arr.forEach(function(o){cloud.synced[kind][o.id]=stable(o)});
+  state[kind]=arr;checkReady();saveCloudCache();safeRender();
+}
+function applySettings(d){cloud.loaded.settings=true;cloud.hasSettings=!!d;var a=d&&d.alliance||'';cloud.synced.settings=d?stable({alliance:a}):null;if(d)state.alliance=a;checkReady();saveCloudCache();safeRender()}
+function checkReady(){if(cloud.loaded.members&&cloud.loaded.events&&cloud.loaded.settings){cloud.ready=true;cloud.status='live';cloud.empty=!state.members.length&&!state.events.length&&!cloud.hasSettings}}
+function syncNow(){
+  if(!CLOUD||!cloud.ready||!cloud.user||!cloud.F)return;
+  var F=cloud.F,db=cloud.db,ops=[];
+  ['members','events'].forEach(function(kind){var seen={};
+    state[kind].forEach(function(o){if(!o.id)o.id=uid();seen[o.id]=1;var j=stable(o);if(cloud.synced[kind][o.id]!==j){ops.push({set:true,ref:F.doc(db,kind,o.id),data:JSON.parse(JSON.stringify(o))});cloud.synced[kind][o.id]=j}});
+    Object.keys(cloud.synced[kind]).forEach(function(id){if(!seen[id]){ops.push({set:false,ref:F.doc(db,kind,id)});delete cloud.synced[kind][id]}});
+  });
+  var sj=stable({alliance:state.alliance||''});
+  if(cloud.synced.settings!==sj){ops.push({set:true,ref:F.doc(db,'planner','settings'),data:{alliance:state.alliance||''}});cloud.synced.settings=sj;cloud.hasSettings=true}
+  for(var i=0;i<ops.length;i+=400){(function(chunk){var b=F.writeBatch(db);chunk.forEach(function(o){if(o.set)b.set(o.ref,o.data);else b.delete(o.ref)});cloud.pending++;
+    b.commit().then(function(){cloud.pending--;safeRender()},function(e){cloud.pending--;toast('Not saved: '+((e&&e.code)||'error')+(e&&e.code==='permission-denied'?' (not allowed — are you logged in as R4?)':''));safeRender()})})(ops.slice(i,i+400))}
+  if(ops.length)cloud.empty=false;
+}
+function startCloud(){
+  var base=window.KS_FB_BASE||'https://www.gstatic.com/firebasejs/12.19.0/';
+  Promise.all([import(base+'firebase-app.js'),import(base+'firebase-firestore.js'),import(base+'firebase-auth.js')]).then(function(m){
+    var A=m[0],F=m[1],U=m[2];cloud.F=F;cloud.U=U;
+    var app=A.initializeApp(FIREBASE_CONFIG),db;
+    try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true,localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true})}catch(e2){db=F.getFirestore(app)}}
+    cloud.db=db;cloud.auth=U.getAuth(app);
+    U.onAuthStateChanged(cloud.auth,function(u){cloud.user=u||null;cloud.authKnown=true;safeRender()});
+    F.onSnapshot(F.collection(db,'members'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('members',arr)},cloudErr);
+    F.onSnapshot(F.collection(db,'events'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('events',arr)},cloudErr);
+    F.onSnapshot(F.doc(db,'planner','settings'),function(d){applySettings(d.exists()?d.data():null)},cloudErr);
+  }).catch(function(e){cloud.status='offline';cloud.err=(e&&e.message)||String(e);render()});
+}
+function cloudLogin(email,pw){
+  if(!cloud.U){ui.loginErr='Not connected yet — check your internet';return render()}
+  cloud.U.signInWithEmailAndPassword(cloud.auth,email,pw).then(function(c){ui.login=false;ui.loginErr=false;toast('Logged in as '+(c.user&&c.user.email||'R4'));render()},function(e){
+    var c=e&&e.code||'';ui.loginErr=/invalid-credential|wrong-password|user-not-found|invalid-email|invalid-login/.test(c)?'Wrong email or password':/too-many-requests/.test(c)?'Too many tries — wait a minute':/network/.test(c)?'No internet connection':'Login failed ('+c+')';render()});
+}
 function touch(){persist();render()}
 
 /* ---------- saving ---------- */
@@ -287,26 +344,40 @@ function render(){
   var ro=isLocked();
   var h='<div class="app'+(ro?' ro':'')+'">';
   h+='<header class="top"><svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc95"/><stop offset="1" stop-color="#b8862f"/></linearGradient></defs><g fill="url(#lg)"><ellipse cx="18.2" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-45 18.2 10.0)"/><ellipse cx="13.1" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-65 13.1 13.0)"/><ellipse cx="9.3" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-85 9.3 17.5)"/><ellipse cx="7.3" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-105 7.3 23.0)"/><ellipse cx="7.3" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-125 7.3 29.0)"/><ellipse cx="9.3" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-145 9.3 34.5)"/><ellipse cx="13.1" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-165 13.1 39.0)"/><ellipse cx="29.8" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-135 29.8 10.0)"/><ellipse cx="34.9" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-115 34.9 13.0)"/><ellipse cx="38.7" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-95 38.7 17.5)"/><ellipse cx="40.7" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-75 40.7 23.0)"/><ellipse cx="40.7" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-55 40.7 29.0)"/><ellipse cx="38.7" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-35 38.7 34.5)"/><ellipse cx="34.9" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-15 34.9 39.0)"/></g><path d="M26.5 9 L17 27 h6.5 L20 40 L31.5 20.5 H25 L28.5 9 Z" fill="url(#lg)" stroke="#0a0d14" stroke-width=".8"/></svg><div class="title"><h1>'+(state.alliance?esc(state.alliance):'Alliance Planner')+'</h1><small>Kingshot · members, power &amp; event groups · Made by Gigi</small></div>';
-  h+='<nav class="tabs"><a href="#leden" class="'+(r.tab==='leden'?'on':'')+'">Members</a><a href="#events" class="'+(r.tab==='events'?'on':'')+'">Events</a><a href="#instellingen" class="'+(r.tab==='instellingen'?'on':'')+'">Settings</a>'+(state.lock?(ro?'<button class="btn sm gold" data-act="login">🔒 R4 login</button>':'<button class="btn sm" data-act="lockme" title="Lock editing again">🔓 R4 · Lock</button>'):'')+(installEvt&&!isStandalone?'<button class="btn sm" data-allow="install">📲 Install app</button>':'')+'</nav></header>';
+  h+='<nav class="tabs"><a href="#leden" class="'+(r.tab==='leden'?'on':'')+'">Members</a><a href="#events" class="'+(r.tab==='events'?'on':'')+'">Events</a><a href="#instellingen" class="'+(r.tab==='instellingen'?'on':'')+'">Settings</a>'+(CLOUD?(cloud.user?'<button class="btn sm" data-act="logout" title="'+esc(cloud.user.email||'')+'">🔓 R4 · Log out</button>':'<button class="btn sm gold" data-act="login">🔒 R4 login</button>'):state.lock?(ro?'<button class="btn sm gold" data-act="login">🔒 R4 login</button>':'<button class="btn sm" data-act="lockme" title="Lock editing again">🔓 R4 · Lock</button>'):'')+(installEvt&&!isStandalone?'<button class="btn sm" data-allow="install">📲 Install app</button>':'')+'</nav></header>';
   if(r.tab==='events')h+=viewEvents(r.ev);
   else if(r.tab==='instellingen')h+=viewSettings();
   else h+=viewMembers();
   h+='<span class="meander"></span><footer class="greek"><span class="laurel">❧</span>Made by <b>Gigi</b><span class="laurel" style="display:inline-block;transform:scaleX(-1)">❧</span></footer></div>';
-  h+=ro?'<div class="savebar"><span class="small">👁 View only — R4s can log in to make changes</span><button class="btn gold sm" data-act="login">🔒 R4 login</button></div>':saveBar();
-  if(ui.login)h+='<div class="modal" data-allow><form class="card" data-form="login" style="width:340px"><h2>R4 login</h2><p class="muted small">Enter the R4 password to make changes.</p><input type="password" name="pw" placeholder="Password" style="width:100%" autofocus><label class="row small muted" style="gap:6px;margin-top:10px"><input type="checkbox" name="remember"> Remember on this device</label>'+(ui.loginErr?'<p class="small" style="color:var(--red);margin:8px 0 0">Wrong password</p>':'')+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" class="btn ghost" data-act="closelogin">Cancel</button><button class="btn gold">Unlock</button></div></form></div>';
+  h+=CLOUD?cloudBar():ro?'<div class="savebar"><span class="small">👁 View only — R4s can log in to make changes</span><button class="btn gold sm" data-act="login">🔒 R4 login</button></div>':saveBar();
+  if(ui.login&&CLOUD)h+='<div class="modal" data-allow><form class="card" data-form="login" style="width:340px"><h2>R4 login</h2><p class="muted small">Log in with your R4 account to make changes.</p><input type="email" name="email" placeholder="Email" autocomplete="username" value="'+esc(ui.loginEmail||'')+'" style="width:100%;margin-bottom:8px"><input type="password" name="pw" placeholder="Password" autocomplete="current-password" style="width:100%">'+(ui.loginErr?'<p class="small" style="color:var(--red);margin:8px 0 0">'+esc(ui.loginErr)+'</p>':'')+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" class="btn ghost" data-act="closelogin">Cancel</button><button class="btn gold">Log in</button></div></form></div>';
+  else if(ui.login)h+='<div class="modal" data-allow><form class="card" data-form="login" style="width:340px"><h2>R4 login</h2><p class="muted small">Enter the R4 password to make changes.</p><input type="password" name="pw" placeholder="Password" style="width:100%" autofocus><label class="row small muted" style="gap:6px;margin-top:10px"><input type="checkbox" name="remember"> Remember on this device</label>'+(ui.loginErr?'<p class="small" style="color:var(--red);margin:8px 0 0">Wrong password</p>':'')+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" class="btn ghost" data-act="closelogin">Cancel</button><button class="btn gold">Unlock</button></div></form></div>';
   root.innerHTML=h;
   if(ro){[].forEach.call(root.querySelectorAll('input,select,textarea,button'),function(el){if(!el.closest(ALLOW))el.disabled=true})}
-  if(ui.login){var pi=root.querySelector('[data-form=login] input[name=pw]');if(pi)pi.focus()}
+  if(ui.login){var em=root.querySelector('[data-form=login] input[name=email]'),pi=root.querySelector('[data-form=login] input[name=pw]');if(em&&!em.value)em.focus();else if(pi)pi.focus()}
   if(focusKey){var el=root.querySelector('[data-focus="'+focusKey+'"]');if(el){el.focus();if(el.setSelectionRange&&el.type==='text'){var l=el.value.length;try{el.setSelectionRange(l,l)}catch(x){}}}}
 }
 
+function cloudBar(){
+  var dot,txt;
+  if(!cloud.ready){dot=cloud.status==='offline'||cloud.status==='error'?'var(--red)':'var(--gold)';txt=cloud.status==='offline'?'⚠ Offline — showing the last loaded data':cloud.status==='error'?'⚠ Database error: '+esc(cloud.err||''):'Connecting to the database…'}
+  else if(cloud.pending){dot='var(--gold)';txt='Saving…'}
+  else{dot='var(--green)';txt=cloud.user?'Live · changes are saved for everyone':'Live · view only'}
+  return '<div class="savebar"><span class="dot" style="background:'+dot+'"></span><span class="small">'+txt+'</span>'+(cloud.ready&&!cloud.user?'<button class="btn gold sm" data-act="login">🔒 R4 login</button>':'')+'</div>';
+}
 function saveBar(){
   var txt=dirty?'Saved in this browser · <b style="color:var(--gold2)">not yet in a file</b>':'Saved in this browser';
   return '<div class="savebar'+(dirty?' dirty':'')+'"><span class="dot"></span><span class="small">'+txt+'</span><button class="btn '+(dirty?'gold':'')+' sm" data-act="download">⬇ Download file with data</button></div>';
 }
 
+function cloudBanner(){
+  if(!CLOUD||!cloud.ready||!cloud.empty)return '';
+  var n=(seed.members||[]).length,e=(seed.events||[]).length;
+  if(cloud.user)return '<div class="card" style="border-color:var(--gold)"><h2>Online database is empty</h2><p class="muted small">Upload the data stored in this app file to the database so everyone sees it'+(n?' ('+n+' members, '+e+' events)':'')+'. You only need to do this once.</p><button class="btn gold" data-act="migrate"'+(n||e?'':' disabled')+'>☁ Upload data to the database</button></div>';
+  return '<div class="hint" style="margin-bottom:14px">No data online yet. An R4 needs to log in and upload the data first.</div>';
+}
 function viewMembers(){
-  var ms=state.members.slice();
+  var ms=state.members.slice();var banner=cloudBanner();
   var total=0,act=0;ms.forEach(function(m){total+=m.power;if(m.active!==false)act++});
   var sorted=sortedMembers();
   if(ui.sort==='name')ms.sort(function(a,b){return a.name.localeCompare(b.name)});else if(ui.sort==='tc')ms.sort(function(a,b){return (b.tc||0)-(a.tc||0)||b.power-a.power});else ms=sorted.slice();
@@ -314,7 +385,7 @@ function viewMembers(){
   var shown=ms.filter(function(m){return (!q||m.name.toLowerCase().indexOf(q)>=0)&&(!ui.lg||(ui.lg==='none'?!m.legion:String(m.legion)===ui.lg))});
   var l1=ms.filter(function(m){return m.legion=='1'}).length,l2=ms.filter(function(m){return m.legion=='2'}).length;
   var maxP=sorted.length?sorted[0].power:1;
-  var h='<div class="stats"><div class="stat"><b>'+ms.length+'</b><span>Members</span></div><div class="stat"><b>'+act+'</b><span>Active</span></div><div class="stat"><b>'+fmt(total)+'</b><span>Total power</span></div><div class="stat"><b>'+fmt(ms.length?total/ms.length:0)+'</b><span>Average</span></div><div class="stat"><b>'+l1+' / '+l2+'</b><span>Legion 1 / Legion 2</span></div></div>';
+  var h=banner+'<div class="stats"><div class="stat"><b>'+ms.length+'</b><span>Members</span></div><div class="stat"><b>'+act+'</b><span>Active</span></div><div class="stat"><b>'+fmt(total)+'</b><span>Total power</span></div><div class="stat"><b>'+fmt(ms.length?total/ms.length:0)+'</b><span>Average</span></div><div class="stat"><b>'+l1+' / '+l2+'</b><span>Legion 1 / Legion 2</span></div></div>';
   h+='<div class="card eo"><h2>Add member</h2><form class="row" data-form="add"><input type="text" name="name" placeholder="Name" class="grow" required data-focus="addname"><input type="text" name="power" placeholder="Power, e.g. 45.2M" style="width:170px" required><button class="btn gold">Add</button></form>';
   h+='<details style="margin-top:12px"'+(ui.bulkOpen?' open':'')+' data-bulk><summary class="muted" style="cursor:pointer">Paste many at once — add new members or update everyone’s power</summary><p class="muted small">One member per line: <code>Name, power</code> (tab, semicolon or space also work). Power can be 45.2M, 45.2 or 45200000. Names are matched without caring about capitals, so existing members just get their new power.<br><b>Kingshot Oracle lists work too:</b> paste the member list from Discord (all pages at once is fine); the name, power and TC level are used. Decorated names (ᵀᴴᴱ, 兮༒, 乇…) are matched to your existing members, and the import result shows which ones were matched by a similar name so you can check them.<br><b>Quick update:</b> click <i>Copy current list</i>, paste it in Notes/Discord, change the numbers, paste it back here and click Import.</p><textarea id="bulk" placeholder="DragonSlayer, 82.4M&#10;Luna; 61,7&#10;KnightBob 39500000"></textarea><div class="row" style="margin-top:8px"><button class="btn gold" data-act="bulk">Import</button><label class="row small muted" style="gap:6px"><input type="checkbox" id="bulkonly"'+(ui.bulkOnly?' checked':'')+'> Only update existing members (don’t add new names)</label><span class="grow"></span><button class="btn" data-act="copylist">Copy current list</button></div>'+bulkReport()+'</details></div>';
   h+='<div class="card"><div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">Member list</h2><span class="eo">'+(ms.length?delBtn('all','🗑 Delete all'):'')+'</span><input type="text" placeholder="Search…" value="'+esc(ui.search)+'" data-f="search" data-focus="search" style="width:180px"><select data-f="lg"><option value="">All legions</option><option value="1"'+(ui.lg==='1'?' selected':'')+'>Legion 1</option><option value="2"'+(ui.lg==='2'?' selected':'')+'>Legion 2</option><option value="none"'+(ui.lg==='none'?' selected':'')+'>No legion set</option></select><select data-f="sort"><option value="power"'+(ui.sort==='power'?' selected':'')+'>By power</option><option value="name"'+(ui.sort==='name'?' selected':'')+'>By name</option><option value="tc"'+(ui.sort==='tc'?' selected':'')+'>By TC level</option></select></div>';
@@ -485,6 +556,7 @@ function briefing(e){
 /* ---------- events ---------- */
 root.addEventListener('submit',function(ev){
   ev.preventDefault();var f=ev.target;var kind=f.getAttribute('data-form');
+  if(kind==='login'&&CLOUD){ui.loginEmail=f.email.value.trim();cloudLogin(ui.loginEmail,f.pw.value);return}
   if(kind==='login'){var h2=state.lock?hashPw(state.lock.salt,f.pw.value):'';if(state.lock&&h2===state.lock.hash){unlockWith(h2,f.remember.checked);ui.login=false;toast('Unlocked — you can edit now');render()}else{ui.loginErr=true;render()}return}
   if(kind==='setpw'){var a1=f.pw1.value,a2=f.pw2.value;if(a1.length<4){toast('Use at least 4 characters');return}if(a1!==a2){toast('The passwords don’t match');return}var salt=uid()+uid();var hh=hashPw(salt,a1);state.lock={salt:salt,hash:hh};unlockWith(hh,false);toast('Password set — download the file to share it');return touch()}
   if(kind==='add'){
@@ -505,6 +577,8 @@ root.addEventListener('click',function(ev){
   if(act==='login'){ui.login=true;ui.loginErr=false;return render()}
   if(act==='closelogin'){ui.login=false;return render()}
   if(act==='lockme'){lockNow();toast('Locked — view only');return render()}
+  if(act==='logout'){if(cloud.U)cloud.U.signOut(cloud.auth).then(function(){toast('Logged out — view only')});return}
+  if(act==='migrate'){state.alliance=seed.alliance||state.alliance;state.members=JSON.parse(JSON.stringify(seed.members||[]));state.events=JSON.parse(JSON.stringify(seed.events||[]));toast('Uploading '+state.members.length+' members and '+state.events.length+' events…');return touch()}
   if(act==='rmpw'){state.lock=null;lockNow();toast('Password removed');return touch()}
   if(act==='askdel'){ui.confirmDel=b.getAttribute('data-key');return render()}
   if(act==='nodel'){ui.confirmDel=null;return render()}
@@ -584,14 +658,16 @@ root.addEventListener('change',function(ev){
 });
 
 function viewSettings(){
-  var h='<div class="card"><h2>R4 password</h2>';
+  if(CLOUD){var h='<div class="card"><h2>R4 accounts</h2><p class="muted small">This planner is connected to an online database: everyone sees the same data, live. R4s log in with their own email and password. Add or remove R4s in the Firebase console → <b>Authentication → Users</b>.</p>'+(cloud.user?'<p class="small" style="margin:0">Logged in as <b style="color:var(--gold2)">'+esc(cloud.user.email||'')+'</b> · <button class="btn sm" data-act="logout">Log out</button></p>':'<button class="btn gold" data-act="login">🔒 R4 login</button>')+'</div>';}
+  else{var h='<div class="card"><h2>R4 password</h2>';
   if(!state.lock)h+='<p class="muted small">Set a password so only R4s can change things. Everyone else who opens the file can still see members, events and line-ups, and copy briefings.</p><form class="row" data-form="setpw"><input type="password" name="pw1" placeholder="New password" style="width:200px"><input type="password" name="pw2" placeholder="Repeat password" style="width:200px"><button class="btn gold">Set password</button></form>';
   else if(isLocked())h+='<p class="muted small">This planner is locked. Log in as R4 to make changes.</p><button class="btn gold" data-act="login">🔒 R4 login</button>';
   else h+='<p class="muted small">Password is <b style="color:var(--green)">on</b>. You are logged in as R4 on this device. Change it below, or remove it.</p><form class="row" data-form="setpw"><input type="password" name="pw1" placeholder="New password" style="width:200px"><input type="password" name="pw2" placeholder="Repeat password" style="width:200px"><button class="btn">Change password</button><button type="button" class="btn ghost danger" data-act="rmpw">Remove password</button></form>';
   h+='<p class="muted small" style="margin:10px 0 0">After setting or changing it, click <b>Download file with data</b> and share that new file. The password is stored scrambled (not readable), but this is a lock against changes by ordinary members — not bank-level security: someone with technical knowledge could get around it.</p></div>';
+  }
   h+='<div class="card"><h2>Alliance</h2><div class="row"><label class="f grow">Alliance name (shown at the top)<input type="text" value="'+esc(state.alliance)+'" data-sf="alliance" placeholder="e.g. [ABC] Iron Knights"></label></div></div>';
   h+='<div class="card"><h2>Backup</h2><p class="muted small">Copy all your data as text to keep it somewhere safe, or paste an earlier backup to restore everything.</p><div class="row" style="margin-bottom:10px"><button class="btn" data-sact="export">Copy backup</button></div><textarea id="imp" class="eo" placeholder="Paste a backup here…"></textarea><div class="row" style="margin-top:8px"><button class="btn eo" data-sact="import">Restore backup</button></div></div>';
-  h+='<div class="card eo"><h2>Danger zone</h2><p class="muted small">Delete all members and all events. The alliance name and R4 password stay. Tip: copy a backup first.</p>'+delBtn('everything','🗑 Delete everything')+'</div>';
+  h+='<div class="card eo"><h2>Danger zone</h2><p class="muted small">Delete all members and all events'+(CLOUD?' — for everyone':'')+'. The alliance name'+(CLOUD?'':' and R4 password')+' stay. Tip: copy a backup first.</p>'+delBtn('everything','🗑 Delete everything')+'</div>';
   if(/^https?:$/.test(location.protocol)&&!isStandalone)h+='<div class="card"><h2>Install as app</h2><p class="muted small" style="margin:0"><b>Android (Chrome):</b> tap <b>📲 Install app</b> at the top, or the ⋮ menu → <b>Add to Home screen / Install app</b>.<br><b>iPhone (Safari):</b> tap the Share button → <b>Add to Home Screen</b>.<br>The app then opens full-screen from its own icon and also works offline.</p></div>';
   h+='<div class="card"><h2>How does auto-assign work?</h2><p class="muted" style="margin:0">Participants are sorted by power. The strongest players fill the first role (e.g. DPS or Lane Anchor), then the next role, and the role marked “Rest” gets everyone left over, so it fills itself no matter how many participants you have (only one role can be Rest at a time; without a Rest role, leftover players go to Reserve). Above the max. number of main players, the weakest go to Reserve. Within a role, each player goes to the group with the lowest total power, so groups stay balanced. Afterwards you can move anyone manually with the small menu next to their name.</p></div>';
   return h;
@@ -609,5 +685,6 @@ window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();ins
 window.addEventListener('appinstalled',function(){installEvt=null;toast('App installed');render()});
 root.addEventListener('click',function(ev){var b=ev.target.closest('[data-allow=install]');if(!b||!installEvt)return;installEvt.prompt();installEvt.userChoice.then(function(){installEvt=null;render()})});
 render();
+if(CLOUD)startCloud();
 })();
 </script></body></html>

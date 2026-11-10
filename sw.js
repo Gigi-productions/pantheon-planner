@@ -1,5 +1,5 @@
 // THE Pantheon Planner — offline support. Bump VERSION if you ever change icons/manifest.
-const VERSION = 'pantheon-v2';
+const VERSION = 'pantheon-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -22,8 +22,9 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
-  // Icons, manifest and fonts: use the saved copy, fetch once if missing.
-  const cacheable = url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
+  // Icons, manifest, fonts and the (versioned) Firebase library files: use the saved copy, fetch once if missing.
+  // Database traffic itself is never cached here — Firebase handles that.
+  const cacheable = url.origin === location.origin || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname) || (url.hostname === 'www.gstatic.com' && url.pathname.startsWith('/firebasejs/'));
   if (!cacheable) return;
   e.respondWith(
     caches.match(req).then(hit => hit || fetch(req).then(res => {
