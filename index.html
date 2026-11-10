@@ -245,7 +245,7 @@ function unlockWith(h,remember){storedUnlock=h;try{sessionStorage.setItem(KEY+':
 function lockNow(){storedUnlock=null;try{sessionStorage.removeItem(KEY+':unlock');localStorage.removeItem(KEY+':unlock')}catch(e){}}
 var ALLOW='[data-allow],[data-act=seenwn],[data-su],[data-sufield],[data-share],[data-act=closesharehelp],[data-f],[data-act=brief],[data-act=login],[data-act=logout],[data-act=closelogin],[data-sact=export],[data-form=login]';
 function guard(ev){if(!isLocked())return;var t=ev.target;if(!t||!t.closest)return;if(t.closest(ALLOW))return;
-  if(t.closest('[data-act],[data-sact],[data-mf],[data-ef],[data-rf],[data-move],[data-act-change],[data-sf],form,textarea')){ev.stopImmediatePropagation();if(ev.type==='submit'||ev.type==='click')ev.preventDefault()}}
+  if(t.closest('[data-act],[data-sact],[data-mf],[data-ef],[data-rf],[data-move],[data-gmove],[data-act-change],[data-sf],form,textarea')){ev.stopImmediatePropagation();if(ev.type==='submit'||ev.type==='click')ev.preventDefault()}}
 ['click','change','submit','input','keydown'].forEach(function(t){root.addEventListener(t,guard,true)});
 function persist(){if(CLOUD){syncNow();saveCloudCache();return}state.rev=Date.now();lsSet(KEY,state);dirty=true}
 
@@ -561,6 +561,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.6',date:'2026-11-10',title:'Garrison groups',items:['New on every event: garrison groups — small groups of players who reinforce each other’s cities. Choose the group size; each group gets a mix of strong and weaker players with about the same total power.','Garrison groups are included in the copied briefing.']},
  {v:'2.5',date:'2026-11-10',title:'Cesares Fury',items:['New event type: Cesares Fury. Plan rally teams for the Cesares Captains and Request Help calls: a strong rally leader per team plus joiners, balanced by power.','Events can now be for “All legions” (the whole alliance) instead of Legion 1 or 2.']},
  {v:'2.4',date:'2026-11-10',title:'What’s new page',items:['This page: see what changed in every update. After an update you get a short notice once.']},
  {v:'2.3',date:'2026-11-10',title:'Sign-up with power',items:['Sign-up is now its own tab in the menu.','When signing up you can optionally fill in your current power.','R4s see the power difference and update the roster with one click; numbers that look like a typo get ⚠ check and are skipped by “Apply all”.','New “Clear all legions” button on the Members page (R4 only).','The Excel sign-up sheet has been removed — signing up happens in the app.']},
@@ -589,6 +590,41 @@ function viewWhatsNew(){
       h+='<div style="margin-top:12px"><div class="row" style="margin-bottom:4px"><span class="wn-v">v'+c.v+'</span><b class="grow">'+esc(c.title)+'</b><span class="muted small">'+fmtDay(c.date)+'</span></div>'+body+'</div>';
       if(i===CHANGELOG.length-1)h+='</details>'}
   });
+  return h+'</div>';
+}
+/* ---------- garrison groups (players who reinforce each other) ---------- */
+function garrisonPool(e){return e.participants.map(member).filter(function(m){if(!m)return false;var a=e.assignment&&e.assignment[m.id];return !(a&&a.role==='reserve')}).sort(function(a,b){return b.power-a.power})}
+function makeGarrison(e,size){
+  var pool=garrisonPool(e),n=pool.length;size=Math.max(2,Math.min(10,+size||3));
+  var k=Math.max(1,Math.ceil(n/size)),gar={},cap=Math.ceil(n/k),tot=new Array(k).fill(0),cnt=new Array(k).fill(0);
+  pool.forEach(function(m){var best=-1;for(var g=0;g<k;g++){if(cnt[g]>=cap)continue;if(best<0||tot[g]<tot[best])best=g}cnt[best]++;tot[best]+=m.power;gar[m.id]=best});
+  /* even out: swap players between groups while that brings both totals closer to the average */
+  var G=[];for(var g0=0;g0<k;g0++)G.push([]);pool.forEach(function(m){G[gar[m.id]].push(m)});
+  var avg=0;tot.forEach(function(t){avg+=t});avg/=k;
+  for(var pass=0;pass<30;pass++){var imp=false;
+    for(var x=0;x<k;x++)for(var y=x+1;y<k;y++)for(var i=0;i<G[x].length;i++)for(var j=0;j<G[y].length;j++){
+      var d=G[x][i].power-G[y][j].power;if(!d)continue;var nx=tot[x]-d,ny=tot[y]+d;
+      if((nx-avg)*(nx-avg)+(ny-avg)*(ny-avg)<(tot[x]-avg)*(tot[x]-avg)+(tot[y]-avg)*(tot[y]-avg)-1){var t1=G[x][i];G[x][i]=G[y][j];G[y][j]=t1;tot[x]=nx;tot[y]=ny;imp=true}}
+    if(!imp)break}
+  G.forEach(function(list,gi){list.forEach(function(m){gar[m.id]=gi})});
+  e.gar=gar;e.garN=k;e.garSize=size;return k;
+}
+function garrisonHtml(e,parts){
+  if(!parts.length)return '';
+  var has=e.gar&&e.garN>0,size=e.garSize||3;
+  var h='<div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow" style="margin:0">🛡 Garrison groups</h2>'
+   +'<span class="row eo" style="gap:6px"><label class="small muted">Group size</label><input type="number" id="garsize" min="2" max="10" value="'+size+'" style="width:64px"><button class="btn'+(has?'':' gold')+' sm" data-act="garmake">'+(has?'Remake groups':'Make garrison groups')+'</button>'+(has?'<button class="btn sm ghost danger" data-act="garclear">Remove</button>':'')+'</span></div>'
+   +'<p class="muted small" style="margin:0 0 10px">Small groups of players who reinforce (garrison) each other’s cities. Each group gets a mix of strong and weaker players with about the same total power. Separate from the roles above — everyone keeps their role.</p>';
+  if(!has)return h+'<p class="small muted" style="margin:0">No garrison groups yet'+(isLocked()?'.':' — choose a group size and click “Make garrison groups”.')+'</p></div>';
+  var groups=[];for(var g=0;g<e.garN;g++)groups.push([]);var none=[];
+  garrisonPool(e).forEach(function(m){var gi=e.gar[m.id];if(gi==null||gi>=e.garN)none.push(m);else groups[gi].push(m)});
+  function sel(m,cur){var o='<select data-gmove="'+m.id+'" title="Move">';for(var i=0;i<e.garN;i++)o+='<option value="'+i+'"'+(cur===i?' selected':'')+'>Garrison '+(i+1)+'</option>';return o+'<option value=""'+(cur==null?' selected':'')+'>No group</option></select>'}
+  h+='<div class="groups" style="border-radius:10px;overflow:hidden">';
+  groups.forEach(function(list,i){h+='<div class="group"><div class="group-h"><b>Garrison '+(i+1)+'</b><span>'+list.length+' · '+fmt(sum(list))+'</span></div>';
+    list.forEach(function(m){h+='<div class="m"><span class="n">'+esc(m.name)+'</span>'+(m.tc?'<span class="lgtag">TC'+m.tc+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+sel(m,i)+'</div>'});
+    if(!list.length)h+='<div class="muted small">Empty</div>';h+='</div>'});
+  h+='</div>';
+  if(none.length){h+='<div class="small" style="margin-top:10px"><b style="color:var(--gold2)">Not in a group yet:</b> ';h+=none.map(function(m){return '<span class="chip" style="margin:2px">'+esc(m.name)+' '+sel(m,null)+'</span>'}).join(' ')+'</div>'}
   return h+'</div>';
 }
 function fitsLegion(m,e){if(e.legion==='all')return m.legion!=='out';return m.legion!=='out'&&(!m.legion||String(m.legion)===String(e.legion))}
@@ -642,6 +678,7 @@ function viewEvent(e){
   h+='<div class="card"><div class="row"><label class="f">Caller<select data-ef="lead">'+opt(e.lead)+'</select></label><label class="f">Backup caller<select data-ef="backup">'+opt(e.backup)+'</select></label><span class="grow"></span><button class="btn gold eo" data-act="auto"'+(parts.length?'':' disabled style="opacity:.5"')+'>⚡ Auto-assign</button>'+(e.assignment?'<button class="btn" data-act="brief">Copy briefing</button>':'')+'</div></div>';
 
   if(e.assignment)h+=viewAssignment(e,parts);
+  h+=garrisonHtml(e,parts);
   return h;
 }
 
@@ -705,6 +742,8 @@ function briefing(e){
     });
   });
   if(G.reserve.length)t+='\n【RESERVE】\n'+G.reserve.map(function(m){return m.name}).join(', ')+'\n';
+  if(e.gar&&e.garN){var gg=[];for(var gi=0;gi<e.garN;gi++)gg.push([]);garrisonPool(e).forEach(function(m){var x=e.gar[m.id];if(x!=null&&x<e.garN)gg[x].push(m.name)});
+    t+='\n【GARRISON GROUPS — reinforce each other】\n';gg.forEach(function(l,i){t+='Garrison '+(i+1)+': '+(l.length?l.join(', '):'—')+'\n'})}
   return t;
 }
 
@@ -785,6 +824,8 @@ root.addEventListener('click',function(ev){
   if(act==='addtop'){var n=+(document.getElementById('topn')||{}).value||20;sortedMembers().filter(function(m){return m.active!==false&&fitsLegion(m,e)}).slice(0,n).forEach(function(m){if(e.participants.indexOf(m.id)<0)e.participants.push(m.id)});return touch()}
   if(act==='clearparts'){e.participants=[];e.assignment=null;return touch()}
   if(act==='rmpart'){var id=b.getAttribute('data-id');e.participants=e.participants.filter(function(p){return p!==id});if(e.assignment)delete e.assignment[id];return touch()}
+  if(act==='garmake'){var gs=+(document.getElementById('garsize')||{}).value||3;var k=makeGarrison(e,gs);toast(k+' garrison group'+(k===1?'':'s')+' made');return touch()}
+  if(act==='garclear'){e.gar=null;e.garN=0;toast('Garrison groups removed');return touch()}
   if(act==='auto'){autoAssign(e);toast('Line-up created');return touch()}
   if(act==='brief'){var t=briefing(e);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('Briefing copied — paste it in alliance chat')},function(){showText(t)})}else showText(t);return}
   if(act==='radd'){e.roles.push({id:uid(),name:'New role',count:5,groups:1,groupLabel:'Group',link:false,rest:false,desc:''});ui.openCfg=true;return touch()}
@@ -821,6 +862,8 @@ root.addEventListener('change',function(ev){
     else if(rf==='count'||rf==='groups')ro[rf]=Math.max(rf==='groups'?2:0,+t.value||0);
     else ro[rf]=t.value;
     return touch()}
+  var gm=t.getAttribute('data-gmove');
+  if(gm){e.gar=e.gar||{};if(t.value==='')delete e.gar[gm];else e.gar[gm]=+t.value;return touch()}
   var mv=t.getAttribute('data-move');
   if(mv&&e.assignment){var p=t.value.split(':');e.assignment[mv]={role:p[0],group:+p[1]||0};return touch()}
 });
