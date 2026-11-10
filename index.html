@@ -596,6 +596,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.11',date:'2026-11-10',title:'Import sign-ups into legion events',items:['Swordland, Tri-Alliance and other legion events now also have “Import into this event”: it adds everyone who signed up for that legion — also sign-ups that haven’t been applied yet — and shows who chose the other legion, isn’t joining or hasn’t answered.']},
  {v:'2.10',date:'2026-11-10',title:'Event times on the sign-up page',items:['The sign-up page shows the date and time of the next event for Legion 1, Legion 2 and Viking Vengeance (also on the Legion buttons).','R4s can change the date and time right there; it updates the event on the Events tab too.']},
  {v:'2.9',date:'2026-11-10',title:'Copy per role or group',items:['Every role in an event now has a 📋 Copy button, and every group a small 📋 — copy just that role or group (with its instructions) and send it to those players.','The same for garrison groups: copy all of them or one group.']},
  {v:'2.8',date:'2026-11-10',title:'Clearer sign-up page',items:['The sign-up page now explains how it works: only your name is required, and you can answer just the Viking Vengeance question, just the legion question, or both.','Every step shows if it is required or optional, and each answer saves right away.']},
@@ -686,6 +687,20 @@ function vikHtml(e){
   if(pendingNew)h+='<p class="small" style="color:#f0a35b;margin:6px 0 0">'+pendingNew+' new name'+(pendingNew===1?'':'s')+' answered too — apply them on the Sign-up tab first to include them.</p>';
   return h+'</div>';
 }
+function legionOf(m){var p='';(cloud.signups||[]).forEach(function(s){if(s.legion&&s.memberId===m.id)p=s.legion});return p||m.legion||''}
+function legionSignupHtml(e){
+  if(e.type==='vikings'||(e.legion!=='1'&&e.legion!=='2'))return '';
+  var act=state.members.filter(function(m){return m.active!==false}).sort(function(a,b){return b.power-a.power});
+  var mine=act.filter(function(m){return legionOf(m)===e.legion}),other=act.filter(function(m){var l=legionOf(m);return l&&l!==e.legion&&l!=='out'}),out=act.filter(function(m){return legionOf(m)==='out'}),none=act.filter(function(m){return !legionOf(m)});
+  var pending=(cloud.signups||[]).filter(function(s){return s.legion===e.legion&&s.memberId}).length,pendingNew=(cloud.signups||[]).filter(function(s){return s.legion===e.legion&&!s.memberId}).length;
+  var h='<div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow" style="margin:0">📝 Signed up for Legion '+e.legion+'</h2><span class="eo"><button class="btn gold sm" data-act="legimport"'+(mine.length?'':' disabled')+'>📥 Import into this event</button></span></div>';
+  h+='<p class="muted small" style="margin:0 0 10px">From the <a href="#signup" style="color:var(--gold2)">Sign-up</a> page and the legions in the member list. <b>Import</b> makes everyone who chose Legion '+e.legion+' the participants of this event'+(pending?' — including '+pending+' sign-up'+(pending===1?'':'s')+' not applied yet':'')+'. Then click Auto-assign.</p>';
+  h+='<div class="row" style="gap:16px;margin-bottom:8px"><span>'+(e.legion==='1'?'⚔️':'🛡️')+' <b>'+mine.length+'</b> Legion '+e.legion+'</span><span class="muted">'+(e.legion==='1'?'🛡️':'⚔️')+' <b>'+other.length+'</b> other legion</span><span class="muted">🚫 <b>'+out.length+'</b> not joining</span><span class="muted">❔ <b>'+none.length+'</b> no answer</span></div>';
+  if(mine.length)h+='<p class="small" style="margin:0 0 6px"><b style="color:var(--gold2)">Legion '+e.legion+':</b> '+mine.map(function(m){return esc(m.name)}).join(', ')+'</p>';
+  if(none.length)h+='<p class="small muted" style="margin:0">No answer yet: '+none.map(function(m){return esc(m.name)}).join(', ')+'</p>';
+  if(pendingNew)h+='<p class="small" style="color:#f0a35b;margin:6px 0 0">'+pendingNew+' new name'+(pendingNew===1?'':'s')+' signed up for Legion '+e.legion+' — apply them on the Sign-up tab first to include them.</p>';
+  return h+'</div>';
+}
 function fitsLegion(m,e){if(e.legion==='all')return m.legion!=='out';return m.legion!=='out'&&(!m.legion||String(m.legion)===String(e.legion))}
 function legionLabel(e){return e.legion==='all'?'All legions':'Legion '+e.legion}
 function typeShort(t){return t==='tri'?'Tri-Alliance':t==='swordland'?'Swordland':t==='vikings'?'Vikings':'Event'}
@@ -715,7 +730,7 @@ function viewEvent(e){
   var parts=e.participants.map(member).filter(Boolean).sort(function(a,b){return b.power-a.power});
   var tot=0;parts.forEach(function(m){tot+=m.power});
   var avail=sortedMembers().filter(function(m){return e.participants.indexOf(m.id)<0});
-  var h=vikHtml(e)+'<div class="card"><div class="row" style="margin-bottom:12px"><span class="badge b-'+e.type+'">'+esc((PRESETS[e.type]||{label:'Event'}).label)+'</span><input type="text" value="'+esc(e.name)+'" data-ef="name" class="grow" style="font-weight:700;font-size:16px"><span>'+delBtn('e:'+e.id,'Delete event')+'</span></div>';
+  var h=vikHtml(e)+legionSignupHtml(e)+'<div class="card"><div class="row" style="margin-bottom:12px"><span class="badge b-'+e.type+'">'+esc((PRESETS[e.type]||{label:'Event'}).label)+'</span><input type="text" value="'+esc(e.name)+'" data-ef="name" class="grow" style="font-weight:700;font-size:16px"><span>'+delBtn('e:'+e.id,'Delete event')+'</span></div>';
   h+='<div class="row"><label class="f">Date<input type="date" value="'+esc(e.date)+'" data-ef="date"></label><label class="f">Time<input type="time" value="'+esc(e.time)+'" data-ef="time"></label><label class="f">Legion<select data-ef="legion"><option value="1"'+(e.legion=='1'?' selected':'')+'>Legion 1</option><option value="2"'+(e.legion=='2'?' selected':'')+'>Legion 2</option><option value="all"'+(e.legion=='all'?' selected':'')+'>All legions</option></select></label><label class="f">Max. main players<input type="number" min="0" value="'+(+e.max||0)+'" data-ef="max" style="width:90px"></label><span class="muted small eo" style="align-self:flex-end;padding-bottom:8px">0 = no limit. Anyone beyond the limit goes to Reserve.</span></div></div>';
 
   h+='<div class="card"><h2>Participants <span class="muted small" style="font-family:Inter">'+parts.length+' players · '+fmt(tot)+'</span></h2><div class="row eo" style="margin-bottom:10px"><select data-act-change="addpart" class="grow"><option value="">+ Add member…</option>';
@@ -907,6 +922,10 @@ root.addEventListener('click',function(ev){
   if(act==='addtop'){var n=+(document.getElementById('topn')||{}).value||20;sortedMembers().filter(function(m){return m.active!==false&&fitsLegion(m,e)}).slice(0,n).forEach(function(m){if(e.participants.indexOf(m.id)<0)e.participants.push(m.id)});return touch()}
   if(act==='clearparts'){e.participants=[];e.assignment=null;return touch()}
   if(act==='rmpart'){var id=b.getAttribute('data-id');e.participants=e.participants.filter(function(p){return p!==id});if(e.assignment)delete e.assignment[id];return touch()}
+  if(act==='legimport'){var lids=state.members.filter(function(m){return m.active!==false&&legionOf(m)===e.legion}).sort(function(a,b){return b.power-a.power}).map(function(m){return m.id});
+    var lrem=e.participants.filter(function(id){return lids.indexOf(id)<0});lrem.forEach(function(id){if(e.assignment)delete e.assignment[id];if(e.gar)delete e.gar[id]});
+    var ladd=lids.filter(function(id){return e.participants.indexOf(id)<0}).length;e.participants=lids;
+    toast(lids.length+' players signed up for Legion '+e.legion+(ladd?' · '+ladd+' added':'')+(lrem.length?' · '+lrem.length+' removed':'')+' — click Auto-assign');return touch()}
   if(act==='cesimport'){var ids=state.members.filter(function(m){var a=vikAvail(m);return m.active!==false&&(a==='on'||a==='part')}).sort(function(a,b){return b.power-a.power}).map(function(m){return m.id});
     var removed=e.participants.filter(function(id){return ids.indexOf(id)<0});removed.forEach(function(id){if(e.assignment)delete e.assignment[id];if(e.gar)delete e.gar[id]});
     var added=ids.filter(function(id){return e.participants.indexOf(id)<0}).length;e.participants=ids;
