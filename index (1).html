@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#090c13"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>THE Pantheon Planner</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style id="css">
+:root{--bg:#0f1420;--panel:#171e2e;--panel2:#1e2739;--line:#2b3650;--text:#e8ecf4;--muted:#93a0b8;--gold:#e0b04a;--gold2:#f3cf7a;--red:#e2675b;--green:#5ec48a;--blue:#5aa2e6;--purple:#a786e8;--r:12px}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{font-family:Cinzel,Georgia,serif;letter-spacing:.02em;margin:0}
+.app{max-width:1280px;margin:0 auto;padding:16px 16px 90px}
+header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:6px 0 16px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--gold),#a26d16);display:grid;place-items:center;color:#1a1300;font-weight:800;font-family:Cinzel,serif;font-size:18px}
+.title h1{font-size:20px;color:var(--gold2)}
+.title small{color:var(--muted)}
+nav.tabs{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap}
+nav.tabs a{padding:8px 14px;border-radius:999px;color:var(--muted);text-decoration:none;border:1px solid transparent;font-weight:600}
+nav.tabs a.on{background:var(--panel2);color:var(--text);border-color:var(--line)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.card h2{font-size:16px;margin-bottom:10px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{background:#0f1523;border:1px solid var(--line);border-radius:8px;padding:8px 10px;outline:none;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+input:disabled{opacity:.35;cursor:not-allowed}
+.lg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lg label{display:flex;align-items:center;gap:4px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600;color:var(--muted)}
+.lg label+label{border-left:1px solid var(--line)}
+.lg input{display:none}
+.lg label.on{background:rgba(224,176,74,.18);color:var(--gold2)}
+.lgtag{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;background:var(--panel2);color:var(--muted);margin-left:4px}
+textarea{width:100%;min-height:110px;resize:vertical}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;white-space:nowrap}
+.btn:hover{border-color:var(--muted)}
+.btn.gold{background:linear-gradient(180deg,var(--gold2),var(--gold));color:#1d1500;border-color:#b98a2a}
+.btn.danger{color:var(--red)}
+.btn.ghost{background:transparent}
+.btn.sm{padding:4px 9px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.stat b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:12px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td input[type=text]{width:100%}
+.rank{color:var(--muted);width:34px}
+.tier{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.t1{background:rgba(224,176,74,.18);color:var(--gold2)}.t2{background:rgba(90,162,230,.16);color:#8fc2f2}.t3{background:rgba(147,160,184,.14);color:var(--muted)}
+.layout{display:grid;grid-template-columns:280px 1fr;gap:16px}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+.evlist a{display:block;padding:10px 12px;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;text-decoration:none;color:var(--text);background:var(--panel)}
+.evlist a.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.evlist .d{color:var(--muted);font-size:12px}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.b-swordland{background:rgba(226,103,91,.18);color:#f0938a}.b-tri{background:rgba(167,134,232,.2);color:#c5aef5}.b-custom{background:rgba(94,196,138,.18);color:#8fdcb0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 10px;font-size:13px}
+.chip .p{color:var(--muted);font-variant-numeric:tabular-nums}
+.chip button{background:none;border:none;color:var(--muted);cursor:pointer;padding:0 4px;font-size:15px;line-height:1}
+.chip button:hover{color:var(--red)}
+.roles-grid{display:grid;gap:14px}
+.role{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);overflow:hidden}
+.role-h{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.role-h h3{font-size:15px}
+.role-h p{margin:0;color:var(--muted);font-size:12px;flex-basis:100%}
+.groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;background:var(--line)}
+.group{background:var(--panel);padding:10px 12px}
+.group-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.group-h b{color:var(--gold2)}
+.group-h span{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.m{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px dashed rgba(255,255,255,.06)}
+.m:first-of-type{border-top:none}
+.m .n{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m .p{color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+.m select{padding:2px 4px;font-size:11px;max-width:96px;background:transparent}
+.r-0{border-top:3px solid var(--red)}.r-1{border-top:3px solid var(--blue)}.r-2{border-top:3px solid var(--green)}.r-3{border-top:3px solid var(--purple)}.r-4{border-top:3px solid var(--gold)}.r-res{border-top:3px solid var(--muted)}
+details.cfg summary{cursor:pointer;font-weight:600;color:var(--gold2);list-style:none}
+details.cfg summary::-webkit-details-marker{display:none}
+.cfgt input[type=number]{width:70px}
+.cfgt input[type=text]{min-width:110px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+.savebar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:#0b1019ee;border:1px solid var(--line);border-radius:999px;padding:8px 8px 8px 16px;box-shadow:0 8px 30px rgba(0,0,0,.45);z-index:20;backdrop-filter:blur(6px);max-width:calc(100% - 24px)}
+.savebar .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.savebar.dirty .dot{background:var(--gold)}
+.toast{position:fixed;bottom:72px;right:16px;background:var(--panel2);border:1px solid var(--gold);padding:10px 14px;border-radius:10px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.hint{background:rgba(224,176,74,.08);border:1px solid rgba(224,176,74,.25);border-radius:10px;padding:10px 12px;color:#e9d6a8;font-size:13px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+label.f > *{color:var(--text)}
+.bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:var(--gold)}
+
+/* ---------- Greek theme ---------- */
+:root{--bg:#090c13;--panel:#111725;--panel2:#182032;--line:#283149;--text:#ece6d6;--muted:#9aa3b6;--gold:#d4a84b;--gold2:#f1d48a;--red:#c4564a;--green:#8aa860;--blue:#4f8fc9;--purple:#9b78d0;--marble:rgba(236,230,214,.03)}
+html,body{background:#090c13}
+body{min-height:100vh;background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(46,109,164,.22),transparent 70%),radial-gradient(ellipse 60% 40% at 50% 110%,rgba(212,168,75,.10),transparent 70%),#090c13;background-attachment:fixed}
+.app{position:relative}
+h1,h2,h3{font-family:Cinzel,'Trajan Pro',Georgia,serif}
+.title h1{font-family:'Cinzel Decorative',Cinzel,Georgia,serif;font-size:24px;letter-spacing:.06em;color:var(--gold2);text-shadow:0 0 18px rgba(212,168,75,.35)}
+.title small{letter-spacing:.04em}
+svg.logo{background:none;border-radius:0;display:block;width:52px;height:52px;filter:drop-shadow(0 0 8px rgba(212,168,75,.35))}
+header.top{border-bottom:none;position:relative;padding-bottom:22px}
+header.top::after,.meander{content:'';position:absolute;left:0;right:0;bottom:0;height:12px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'%3E%3Cpath d='M0 18H18V2H3V14H13V6H8V10' fill='none' stroke='%23d4a84b' stroke-width='1.6'/%3E%3C/svg%3E") repeat-x;background-size:12px 12px;opacity:.55}
+.meander{position:static;display:block;margin:28px 0 14px}
+nav.tabs a{font-family:Cinzel,Georgia,serif;letter-spacing:.05em;font-size:13px}
+nav.tabs a.on{background:linear-gradient(180deg,rgba(212,168,75,.16),rgba(212,168,75,.04));border-color:rgba(212,168,75,.45);color:var(--gold2)}
+.card,.stat,.role,.evlist a{background:linear-gradient(180deg,rgba(236,230,214,.035),rgba(236,230,214,0) 40%),var(--panel);border-color:rgba(212,168,75,.16);box-shadow:inset 0 1px 0 rgba(241,212,138,.06),0 6px 24px rgba(0,0,0,.25)}
+.card h2{font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold2)}
+.card h2::before{content:'◆';font-size:9px;color:var(--gold);margin-right:8px;vertical-align:2px}
+.stat b{font-family:Cinzel,Georgia,serif;color:var(--gold2)}
+.btn.gold{background:linear-gradient(180deg,#f6dc95,#c8963a);color:#1d1400;border-color:#a87a2a;text-shadow:0 1px 0 rgba(255,240,200,.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 10px rgba(212,168,75,.25)}
+.btn{font-family:Inter,system-ui,sans-serif}
+input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{background:#0b0f19;border-color:#252e44}
+th{color:#b8a57a;letter-spacing:.08em}
+.evlist a.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset,0 0 18px rgba(212,168,75,.15)}
+.role-h{background:linear-gradient(90deg,rgba(212,168,75,.07),transparent)}
+.role-h h3{letter-spacing:.06em;color:var(--gold2)}
+.group{background:var(--panel)}
+.groups{background:rgba(212,168,75,.14)}
+.r-0{border-top:3px solid #c4564a}.r-1{border-top:3px solid #4f8fc9}.r-2{border-top:3px solid #8aa860}.r-3{border-top:3px solid #9b78d0}.r-4{border-top:3px solid #d4a84b}
+.b-swordland{background:rgba(196,86,74,.18);color:#e8968c}.b-tri{background:rgba(79,143,201,.18);color:#9cc4ea}.b-custom{background:rgba(138,168,96,.18);color:#b8d197}
+.badge{font-family:Cinzel,Georgia,serif}
+.savebar{border-color:rgba(212,168,75,.35);background:#0a0d15f0}
+.hint{background:rgba(212,168,75,.06);border-color:rgba(212,168,75,.28)}
+.empty{border-color:rgba(212,168,75,.25);font-family:Cinzel,Georgia,serif;letter-spacing:.03em}
+.bar i{background:linear-gradient(90deg,#b8862f,#f1d48a)}
+footer.greek{text-align:center;color:var(--muted);font-size:12px;padding:0 0 4px;letter-spacing:.06em}
+footer.greek b{font-family:'Cinzel Decorative',Cinzel,Georgia,serif;color:var(--gold2);font-size:14px}
+footer.greek .laurel{color:var(--gold);margin:0 6px}
+::selection{background:rgba(212,168,75,.35)}
+.ro .eo{display:none!important}
+.ro input:disabled:not([type=checkbox]),.ro select:disabled{opacity:1;background:transparent;border-color:transparent;-webkit-appearance:none;appearance:none;cursor:default;color:var(--text)}
+.ro input[type=checkbox]:disabled{opacity:.8;cursor:default}
+.ro .lg label{cursor:default}
+.ro .lg input:disabled+*,.ro .lg label{opacity:1}
+.modal{position:fixed;inset:0;background:rgba(5,7,12,.72);display:grid;place-items:center;z-index:40;backdrop-filter:blur(3px)}
+.modal .card{margin:0;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+nav.tabs{align-items:center}
+.app{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-top:max(16px,env(safe-area-inset-top))}
+.savebar{bottom:max(16px,env(safe-area-inset-bottom))}
+@media(max-width:640px){.title{flex:1;min-width:0}.title h1{font-size:19px}svg.logo{width:42px;height:42px}nav.tabs{margin-left:0;width:100%}.savebar{gap:8px;padding-left:12px}.savebar>.small{white-space:nowrap;font-size:11px}.savebar .btn{padding:4px 8px}}
+</style></head><body><div id="root"></div><script id="state" type="application/json">{"rev":1794088350324,"alliance":"THE Pantheon","members":[{"id":"wvn74af","name":"johny","power":100000000,"active":true},{"id":"k1qm4lw","name":"ZEUSTHE","power":184023460,"active":true},{"id":"70n55rz","name":"Not So","power":149027374,"active":true},{"id":"ef4b1sr","name":"PYTHONTHE8","power":140917983,"active":true},{"id":"k48gals","name":"Jershon","power":140265026,"active":true},{"id":"u98jm5a","name":"HERMES","power":139460009,"active":true},{"id":"1i4x4hz","name":"Sheesh","power":134705500,"active":true},{"id":"d8r4gfv","name":"Champion","power":125743333,"active":true},{"id":"3j0ln37","name":"ARESTHE","power":112957949,"active":true},{"id":"ld4il1p","name":"MORPHEUSTHE","power":103367670,"active":true},{"id":"cxmtfdz","name":"CHAOSTHE","power":99624106,"active":true},{"id":"uscb296","name":"Pororo","power":92551442,"active":true},{"id":"h7ub5sd","name":"Grand Turk","power":92447096,"active":true},{"id":"r8azn6m","name":"happy","power":90853619,"active":true},{"id":"m8acz1r","name":"Novacaine","power":90515823,"active":true},{"id":"cakb6j6","name":"GIGIGOKU","power":89771196,"active":true},{"id":"omtfjsj","name":"OTREMAMX","power":82776881,"active":true},{"id":"q04jpqx","name":"KSA","power":82641633,"active":true},{"id":"crsmivx","name":"æther","power":81017288,"active":true},{"id":"e5cgr4z","name":"Rarejames","power":80012344,"active":true},{"id":"dcfzyc1","name":"Kalansay","power":78973093,"active":true},{"id":"c3275gw","name":"ZEPHYRUSTHE","power":77927951,"active":true},{"id":"lw4ikfw","name":"Zils","power":77429150,"active":true},{"id":"b8hapdn","name":"Ipfa","power":74537619,"active":true},{"id":"hnc8ev9","name":"Leon","power":73945153,"active":true},{"id":"vj3f3jb","name":"CERBERUS","power":73620847,"active":true},{"id":"1iar3rn","name":"Eggstein","power":73177013,"active":true},{"id":"njjzpxe","name":"General_Samiraja","power":72702196,"active":true},{"id":"b5vqpip","name":"Uhtred","power":71979331,"active":true},{"id":"j16mvfc","name":"AngryOne","power":71857189,"active":true},{"id":"vql4dtn","name":"Pushedbuckle12","power":71699626,"active":true},{"id":"2gnpdiy","name":"G2G","power":71601480,"active":true},{"id":"ujdaux3","name":"HADES","power":71397167,"active":true},{"id":"vfiwa1h","name":"Sunless","power":70453988,"active":true},{"id":"drh5sgj","name":"ATHENA","power":70273360,"active":true},{"id":"rwhp0t2","name":"APHRODITE","power":68815646,"active":true},{"id":"3akzohs","name":"Clarisse","power":68685413,"active":true},{"id":"tzgsena","name":"Chaque","power":68529941,"active":true},{"id":"gmn2l4p","name":"ShiggyD","power":68511942,"active":true},{"id":"zbaikcc","name":"Bad water","power":68483906,"active":true},{"id":"t7wjva1","name":"Mua Dong","power":67185618,"active":true},{"id":"6bshcpg","name":"Hyperion","power":66797231,"active":true},{"id":"x0xx6s9","name":"beelzebub","power":65728006,"active":true},{"id":"vkyvs5y","name":"戰爭行者","power":65263976,"active":true},{"id":"c0fuz41","name":"Thomas der III","power":64583039,"active":true},{"id":"oi47avj","name":"lord charls","power":64536117,"active":true},{"id":"qptvpor","name":"JAU","power":63834781,"active":true},{"id":"mjmg94f","name":"HERATHE","power":62379223,"active":true}],"events":[{"id":"72ccwsg","type":"swordland","name":"Swordland Showdown","date":"2026-11-12","time":"01:55","legion":"1","max":30,"participants":["wvn74af","k1qm4lw","70n55rz","ef4b1sr","k48gals","u98jm5a","1i4x4hz","d8r4gfv","3j0ln37","ld4il1p","cxmtfdz","uscb296","h7ub5sd","r8azn6m","m8acz1r","cakb6j6","omtfjsj","q04jpqx","crsmivx","e5cgr4z","dcfzyc1","c3275gw","lw4ikfw","b8hapdn","hnc8ev9","vj3f3jb","1iar3rn","njjzpxe","b5vqpip","j16mvfc","vql4dtn","2gnpdiy","ujdaux3","vfiwa1h","drh5sgj","rwhp0t2","3akzohs","tzgsena","gmn2l4p","zbaikcc","t7wjva1","6bshcpg","x0xx6s9","vkyvs5y","c0fuz41","oi47avj","qptvpor","mjmg94f"],"roles":[{"name":"Attacker","count":5,"groups":1,"groupLabel":"","link":false,"rest":false,"desc":"Strongest players. Hunt the troops of the strongest opponents and, later in the event, rally buildings for loot.","id":"gsqlcyb","prevGroups":2},{"name":"Defender","count":5,"groups":1,"groupLabel":"","link":false,"rest":false,"desc":"Strong players with defensive heroes. Hold the Swordshrine/Sanctums or bonus buildings (Stables, Belltower), reinforce and lead defensive rallies.","id":"xlbhxav","prevGroups":2},{"name":"Support","count":0,"groups":1,"groupLabel":"","link":false,"rest":true,"desc":"Everyone else. Join rallies, reinforce garrisons, collect loot crates and mine Undercellars. Stay mobile with teleports.","id":"g3cq3yk","prevGroups":2},{"id":"qexyssr","name":"Scout","count":5,"groups":1,"groupLabel":"Group","link":false,"rest":false,"desc":""}],"assignment":{"k1qm4lw":{"role":"gsqlcyb","group":0},"70n55rz":{"role":"gsqlcyb","group":0},"ef4b1sr":{"role":"gsqlcyb","group":0},"k48gals":{"role":"gsqlcyb","group":0},"u98jm5a":{"role":"gsqlcyb","group":0},"1i4x4hz":{"role":"xlbhxav","group":0},"d8r4gfv":{"role":"xlbhxav","group":0},"3j0ln37":{"role":"xlbhxav","group":0},"ld4il1p":{"role":"xlbhxav","group":0},"wvn74af":{"role":"xlbhxav","group":0},"cxmtfdz":{"role":"g3cq3yk","group":0},"uscb296":{"role":"g3cq3yk","group":0},"h7ub5sd":{"role":"g3cq3yk","group":0},"r8azn6m":{"role":"g3cq3yk","group":0},"m8acz1r":{"role":"g3cq3yk","group":0},"cakb6j6":{"role":"g3cq3yk","group":0},"omtfjsj":{"role":"g3cq3yk","group":0},"q04jpqx":{"role":"g3cq3yk","group":0},"crsmivx":{"role":"g3cq3yk","group":0},"e5cgr4z":{"role":"g3cq3yk","group":0},"dcfzyc1":{"role":"g3cq3yk","group":0},"c3275gw":{"role":"g3cq3yk","group":0},"lw4ikfw":{"role":"g3cq3yk","group":0},"b8hapdn":{"role":"g3cq3yk","group":0},"hnc8ev9":{"role":"g3cq3yk","group":0},"vj3f3jb":{"role":"qexyssr","group":0},"1iar3rn":{"role":"qexyssr","group":0},"njjzpxe":{"role":"qexyssr","group":0},"b5vqpip":{"role":"qexyssr","group":0},"j16mvfc":{"role":"qexyssr","group":0},"vql4dtn":{"role":"reserve","group":0},"2gnpdiy":{"role":"reserve","group":0},"ujdaux3":{"role":"reserve","group":0},"vfiwa1h":{"role":"reserve","group":0},"drh5sgj":{"role":"reserve","group":0},"rwhp0t2":{"role":"reserve","group":0},"3akzohs":{"role":"reserve","group":0},"tzgsena":{"role":"reserve","group":0},"gmn2l4p":{"role":"reserve","group":0},"zbaikcc":{"role":"reserve","group":0},"t7wjva1":{"role":"reserve","group":0},"6bshcpg":{"role":"reserve","group":0},"x0xx6s9":{"role":"reserve","group":0},"vkyvs5y":{"role":"reserve","group":0},"c0fuz41":{"role":"reserve","group":0},"oi47avj":{"role":"reserve","group":0},"qptvpor":{"role":"reserve","group":0},"mjmg94f":{"role":"reserve","group":0}},"lead":"cakb6j6","backup":""}],"fileId":"rpf4zxm"}</script><script id="app">
+(function(){
+"use strict";
+var root=document.getElementById('root');
+function uid(){return Math.random().toString(36).slice(2,9)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function lsGet(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function lsDel(k){try{localStorage.removeItem(k)}catch(e){}}
+
+function parsePower(v){
+  if(typeof v==='number')return v;
+  var s=String(v||'').trim().toLowerCase().replace(/\s/g,'');
+  if(!s)return 0;
+  var mult=1;
+  if(/(b|mld)$/.test(s)){mult=1e9;s=s.replace(/(b|mld)$/,'')}
+  else if(/m$/.test(s)){mult=1e6;s=s.slice(0,-1)}
+  else if(/k$/.test(s)){mult=1e3;s=s.slice(0,-1)}
+  if(mult>1){s=s.replace(',','.')}
+  else{s=s.replace(/[.,](?=\d{3}(\D|$))/g,'').replace(',','.')}
+  var n=parseFloat(s);if(isNaN(n))return 0;
+  var r=n*mult;
+  if(mult===1&&r>0&&r<100000)r=r*1e6; /* "45.2" = 45.2M */
+  return Math.round(r);
+}
+function fmt(p){p=p||0;if(p>=1e9)return (p/1e9).toFixed(2)+'B';if(p>=1e6)return (p/1e6).toFixed(1)+'M';if(p>=1e3)return (p/1e3).toFixed(0)+'K';return String(p)}
+
+var PRESETS={
+  swordland:{label:'Swordland Showdown',max:20,roles:[
+    {name:'DPS',count:4,groups:1,groupLabel:'DPS',link:false,rest:false,desc:'Strongest players. Hunt the troops of the strongest opponents and, later in the event, rally buildings for loot.'},
+    {name:'Tank',count:6,groups:2,groupLabel:'Tank Team',link:false,rest:false,desc:'Strong players with defensive heroes. Hold the Swordshrine/Sanctums or bonus buildings (Stables, Belltower), reinforce and lead defensive rallies.'},
+    {name:'Support',count:0,groups:2,groupLabel:'Support Team',link:true,rest:true,desc:'Everyone else. Join rallies, reinforce garrisons, collect loot crates and mine Undercellars. Stay mobile with teleports.'}
+  ]},
+  tri:{label:'Tri-Alliance Clash',max:30,roles:[
+    {name:'Lane Anchor',count:6,groups:3,groupLabel:'Lane',link:false,rest:false,desc:'Strongest and most reliable players. Take and hold the first key building of their lane and keep the route open.'},
+    {name:'Lane Support',count:12,groups:3,groupLabel:'Lane',link:true,rest:false,desc:'Back up the anchor of the same lane so they can rotate out to recover. Cover the lane while strong squads heal.'},
+    {name:'Reaction Team',count:0,groups:2,groupLabel:'Reaction Team',link:false,rest:true,desc:'Take neutral or weakly defended buildings once the lanes are stable. Later: defend your own Garrison and the route buildings to the Temple.'}
+  ]},
+  custom:{label:'Other event',max:0,roles:[
+    {name:'Front Line',count:5,groups:1,groupLabel:'Front Line',link:false,rest:false,desc:'Strongest players.'},
+    {name:'Middle',count:10,groups:2,groupLabel:'Group',link:false,rest:false,desc:'Mid-power players.'},
+    {name:'Back Line',count:0,groups:2,groupLabel:'Group',link:false,rest:true,desc:'Everyone else.'}
+  ]}
+};
+function presetRoles(type){return PRESETS[type].roles.map(function(r){var c=JSON.parse(JSON.stringify(r));c.id=uid();return c})}
+
+/* ---------- state ---------- */
+var FIREBASE_CONFIG={"apiKey": "AIzaSyCbZXq-ltDUquFrmWgMJEfFlioSASGA-sM", "authDomain": "pantheon-planner.firebaseapp.com", "projectId": "pantheon-planner", "storageBucket": "pantheon-planner.firebasestorage.app", "messagingSenderId": "865836657206", "appId": "1:865836657206:web:d294ef724c8f4eaa434697"}; /*FIREBASE_CONFIG*/
+var CLOUD=!!(FIREBASE_CONFIG&&FIREBASE_CONFIG.projectId);
+var cloud={ready:false,user:null,authKnown:false,status:'connecting',empty:false,pending:0,loaded:{members:false,events:false,settings:false},synced:{members:{},events:{},settings:null},renderPending:false};
+var embedded={rev:0,alliance:'',members:[],events:[]};
+try{embedded=JSON.parse(document.getElementById('state').textContent)}catch(e){}
+var KEY='ksplanner:'+(embedded.fileId||'blank');
+var state=embedded;
+var local=lsGet(KEY);
+var storedUnlock=null;try{storedUnlock=sessionStorage.getItem(KEY+':unlock')||localStorage.getItem(KEY+':unlock')}catch(e){}
+if(local&&local.rev>embedded.rev){
+  var eh=embedded.lock&&embedded.lock.hash,lh=local.lock&&local.lock.hash;
+  /* a locked shared file can't be bypassed by an older unlocked copy in this browser */
+  if(!eh||lh===eh||storedUnlock===eh||(lh&&storedUnlock===lh))state=local;
+}
+var seed=null;
+if(CLOUD){
+  seed=JSON.parse(JSON.stringify(embedded));
+  var CKEY='ksplanner-cloud:'+FIREBASE_CONFIG.projectId;
+  var cached=lsGet(CKEY);
+  state=cached?{alliance:cached.alliance||'',members:cached.members||[],events:cached.events||[]}:JSON.parse(JSON.stringify(embedded));
+  delete state.lock;
+}
+state.members=state.members||[];state.events=state.events||[];
+var dlRev=lsGet(KEY+':dl')||embedded.rev;
+var dirty=state.rev!==dlRev;
+
+var ui={confirmDel:null,search:'',sort:'power'};
+
+function member(id){for(var i=0;i<state.members.length;i++)if(state.members[i].id===id)return state.members[i];return null}
+function ev(id){for(var i=0;i<state.events.length;i++)if(state.events[i].id===id)return state.events[i];return null}
+function sortedMembers(){return state.members.slice().sort(function(a,b){return b.power-a.power})}
+function tierOf(m){var s=sortedMembers();var i=s.indexOf(m);var n=s.length||1;if(i<n*0.2)return 1;if(i<n*0.6)return 2;return 3}
+
+function sha256(ascii){function rr(v,a){return(v>>>a)|(v<<(32-a))}var mp=Math.pow,mw=mp(2,32),i,j,result='',words=[],bl=ascii.length*8;var hash=sha256.h=sha256.h||[],k=sha256.k=sha256.k||[],pl=k.length,ic={};for(var c=2;pl<64;c++){if(!ic[c]){for(i=0;i<313;i+=c)ic[i]=c;hash[pl]=(mp(c,.5)*mw)|0;k[pl++]=(mp(c,1/3)*mw)|0}}ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';for(i=0;i<ascii.length;i++){j=ascii.charCodeAt(i);if(j>>8)return;words[i>>2]|=j<<((3-i)%4)*8}words[words.length]=((bl/mw)|0);words[words.length]=(bl);for(j=0;j<words.length;){var w=words.slice(j,j+=16),oh=hash;hash=hash.slice(0,8);for(i=0;i<64;i++){var w15=w[i-15],w2=w[i-2],a=hash[0],e=hash[4];var t1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);var t2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));hash=[(t1+t2)|0].concat(hash);hash[4]=(hash[4]+t1)|0}for(i=0;i<8;i++)hash[i]=(hash[i]+oh[i])|0}for(i=0;i<8;i++)for(j=3;j+1;j--){var b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16)}return result}
+function hashPw(salt,pw){return sha256(unescape(encodeURIComponent(salt+'|'+pw)))}
+function isLocked(){if(CLOUD)return !(cloud.ready&&cloud.user);return !!(state.lock&&state.lock.hash)&&storedUnlock!==state.lock.hash}
+function unlockWith(h,remember){storedUnlock=h;try{sessionStorage.setItem(KEY+':unlock',h);if(remember)localStorage.setItem(KEY+':unlock',h)}catch(e){}}
+function lockNow(){storedUnlock=null;try{sessionStorage.removeItem(KEY+':unlock');localStorage.removeItem(KEY+':unlock')}catch(e){}}
+var ALLOW='[data-allow],[data-f],[data-act=brief],[data-act=login],[data-act=logout],[data-act=closelogin],[data-sact=export],[data-form=login]';
+function guard(ev){if(!isLocked())return;var t=ev.target;if(!t||!t.closest)return;if(t.closest(ALLOW))return;
+  if(t.closest('[data-act],[data-sact],[data-mf],[data-ef],[data-rf],[data-move],[data-act-change],[data-sf],form,textarea')){ev.stopImmediatePropagation();if(ev.type==='submit'||ev.type==='click')ev.preventDefault()}}
+['click','change','submit','input','keydown'].forEach(function(t){root.addEventListener(t,guard,true)});
+function persist(){if(CLOUD){syncNow();saveCloudCache();return}state.rev=Date.now();lsSet(KEY,state);dirty=true}
+
+/* ---------- cloud (Firebase) ---------- */
+function stable(o){if(Array.isArray(o))return '['+o.map(stable).join(',')+']';if(o&&typeof o==='object'){return '{'+Object.keys(o).filter(function(k){return o[k]!==undefined}).sort().map(function(k){return JSON.stringify(k)+':'+stable(o[k])}).join(',')+'}'}return JSON.stringify(o===undefined?null:o)}
+function saveCloudCache(){if(CLOUD)lsSet(CKEY,{alliance:state.alliance,members:state.members,events:state.events})}
+function isEditing(){var a=document.activeElement;return !!(a&&root.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=='checkbox'&&!a.closest('.modal'))}
+function safeRender(){if(isEditing()){cloud.renderPending=true;return}render()}
+root.addEventListener('focusout',function(){setTimeout(function(){if(cloud.renderPending&&!isEditing()){cloud.renderPending=false;render()}},0)});
+function cloudErr(e){cloud.status='error';cloud.err=(e&&(e.code||e.message))||String(e);safeRender()}
+function applyRemote(kind,arr){
+  cloud.loaded[kind]=true;cloud.synced[kind]={};
+  arr.forEach(function(o){cloud.synced[kind][o.id]=stable(o)});
+  state[kind]=arr;checkReady();saveCloudCache();safeRender();
+}
+function applySettings(d){cloud.loaded.settings=true;cloud.hasSettings=!!d;var a=d&&d.alliance||'';cloud.synced.settings=d?stable({alliance:a}):null;if(d)state.alliance=a;checkReady();saveCloudCache();safeRender()}
+function checkReady(){if(cloud.loaded.members&&cloud.loaded.events&&cloud.loaded.settings){cloud.ready=true;cloud.status='live';cloud.empty=!state.members.length&&!state.events.length&&!cloud.hasSettings}}
+function syncNow(){
+  if(!CLOUD||!cloud.ready||!cloud.user||!cloud.F)return;
+  var F=cloud.F,db=cloud.db,ops=[];
+  ['members','events'].forEach(function(kind){var seen={};
+    state[kind].forEach(function(o){if(!o.id)o.id=uid();seen[o.id]=1;var j=stable(o);if(cloud.synced[kind][o.id]!==j){ops.push({set:true,ref:F.doc(db,kind,o.id),data:JSON.parse(JSON.stringify(o))});cloud.synced[kind][o.id]=j}});
+    Object.keys(cloud.synced[kind]).forEach(function(id){if(!seen[id]){ops.push({set:false,ref:F.doc(db,kind,id)});delete cloud.synced[kind][id]}});
+  });
+  var sj=stable({alliance:state.alliance||''});
+  if(cloud.synced.settings!==sj){ops.push({set:true,ref:F.doc(db,'planner','settings'),data:{alliance:state.alliance||''}});cloud.synced.settings=sj;cloud.hasSettings=true}
+  for(var i=0;i<ops.length;i+=400){(function(chunk){var b=F.writeBatch(db);chunk.forEach(function(o){if(o.set)b.set(o.ref,o.data);else b.delete(o.ref)});cloud.pending++;
+    b.commit().then(function(){cloud.pending--;safeRender()},function(e){cloud.pending--;toast('Not saved: '+((e&&e.code)||'error')+(e&&e.code==='permission-denied'?' (not allowed — are you logged in as R4?)':''));safeRender()})})(ops.slice(i,i+400))}
+  if(ops.length)cloud.empty=false;
+}
+function startCloud(){
+  var base=window.KS_FB_BASE||'https://www.gstatic.com/firebasejs/12.19.0/';
+  Promise.all([import(base+'firebase-app.js'),import(base+'firebase-firestore.js'),import(base+'firebase-auth.js')]).then(function(m){
+    var A=m[0],F=m[1],U=m[2];cloud.F=F;cloud.U=U;
+    var app=A.initializeApp(FIREBASE_CONFIG),db;
+    try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true,localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true})}catch(e2){db=F.getFirestore(app)}}
+    cloud.db=db;cloud.auth=U.getAuth(app);
+    U.onAuthStateChanged(cloud.auth,function(u){cloud.user=u||null;cloud.authKnown=true;safeRender()});
+    F.onSnapshot(F.collection(db,'members'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('members',arr)},cloudErr);
+    F.onSnapshot(F.collection(db,'events'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('events',arr)},cloudErr);
+    F.onSnapshot(F.doc(db,'planner','settings'),function(d){applySettings(d.exists()?d.data():null)},cloudErr);
+  }).catch(function(e){cloud.status='offline';cloud.err=(e&&e.message)||String(e);render()});
+}
+var R4_DOMAIN='pantheon-planner.app'; /* usernames without @ become name@R4_DOMAIN */
+function r4Name(u){var e=(u&&u.email)||'';return e.slice(-(R4_DOMAIN.length+1))==='@'+R4_DOMAIN?e.slice(0,-(R4_DOMAIN.length+1)):e}
+function cloudLogin(email,pw){
+  if(email&&email.indexOf('@')<0)email=email.toLowerCase().replace(/\s+/g,'')+'@'+R4_DOMAIN;
+  if(!cloud.U){ui.loginErr='Not connected yet — check your internet';return render()}
+  cloud.U.signInWithEmailAndPassword(cloud.auth,email,pw).then(function(c){ui.login=false;ui.loginErr=false;toast('Logged in as '+(r4Name(c.user)||'R4'));render()},function(e){
+    var c=e&&e.code||'';ui.loginErr=/invalid-credential|wrong-password|user-not-found|invalid-email|invalid-login/.test(c)?'Wrong username or password':/too-many-requests/.test(c)?'Too many tries — wait a minute':/network/.test(c)?'No internet connection':'Login failed ('+c+')';render()});
+}
+function touch(){persist();render()}
+
+/* ---------- saving ---------- */
+function buildDoc(s){
+  var css=document.getElementById('css').textContent;
+  var js=document.getElementById('app').textContent;
+  var json=JSON.stringify(s).replace(/</g,'\\u003c');
+  var sc='script';
+  return '<!DOCTYPE html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="theme-color" content="#090c13"><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>'+esc(s.alliance?s.alliance+' Planner':'Kingshot Alliance Planner')+'</title><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style id="css">'+css+'</style></head><body><div id="root"></div><'+sc+' id="state" type="application/json">'+json+'</'+sc+'><'+sc+' id="app">'+js+'</'+sc+'></body></html>';
+}
+function download(){
+  var copy=JSON.parse(JSON.stringify(state));
+  if(!copy.fileId)copy.fileId=uid();
+  var html=buildDoc(copy);
+  try{
+    var blob=new Blob([html],{type:'text/html'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    var base=(state.alliance||'kingshot-alliance').replace(/[^\w\-]+/g,'-').replace(/^-+|-+$/g,'')||'kingshot-alliance';
+    var hosted=/^https?:$/.test(location.protocol);a.download=hosted?'index.html':base+'-planner.html';document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},1000);
+    lsSet(KEY+':dl',state.rev);dirty=false;render();
+    toast(hosted?'Downloaded index.html — upload it to your GitHub repo to update the app for everyone':'File downloaded — share this new file');
+  }catch(e){toast('Download not available here')}
+}
+document.addEventListener('keydown',function(e){if((e.ctrlKey||e.metaKey)&&e.key==='s'){e.preventDefault();if(!isLocked())download()}});
+
+var toastT;
+function toast(msg){var t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t)}t.textContent=msg;t.style.display='block';clearTimeout(toastT);toastT=setTimeout(function(){t.style.display='none'},2800)}
+
+/* ---------- routing ---------- */
+function route(){var h=(location.hash||'').slice(1);if(!h)return{tab:'leden'};if(h.indexOf('ev-')===0)return{tab:'events',ev:h.slice(3)};return{tab:h}}
+function go(h){location.hash=h}
+window.addEventListener('hashchange',render);
+
+/* ---------- auto assign ---------- */
+function autoAssign(e){
+  var parts=e.participants.map(member).filter(Boolean).sort(function(a,b){return b.power-a.power});
+  var max=+e.max||0;
+  var main=max>0?parts.slice(0,max):parts.slice();
+  var reserve=parts.slice(main.length);
+  var asg={},idx=0,prevTotals=null;
+  e.roles.forEach(function(r,ri){
+    var left=main.length-idx,n;
+    if(r.rest){
+      var later=0;for(var j=ri+1;j<e.roles.length;j++)if(!e.roles[j].rest)later+=(+e.roles[j].count||0);
+      n=Math.max(0,left-later);
+    }else n=Math.min(+r.count||0,left);
+    var slice=main.slice(idx,idx+n);idx+=n;
+    var k=Math.max(1,+r.groups||1);
+    var totals=(r.link&&prevTotals&&prevTotals.length===k)?prevTotals.slice():new Array(k).fill(0);
+    var cap=Math.ceil(slice.length/k),counts=new Array(k).fill(0);
+    slice.forEach(function(m){
+      var best=-1;for(var g=0;g<k;g++){if(counts[g]>=cap)continue;if(best<0||totals[g]<totals[best])best=g}
+      counts[best]++;totals[best]+=m.power;asg[m.id]={role:r.id,group:best};
+    });
+    prevTotals=totals;
+  });
+  main.slice(idx).forEach(function(m){asg[m.id]={role:'reserve',group:0}});
+  reserve.forEach(function(m){asg[m.id]={role:'reserve',group:0}});
+  e.assignment=asg;
+}
+
+/* ---------- render ---------- */
+function render(){
+  var r=route();
+  var active=document.activeElement, focusKey=active&&active.getAttribute&&active.getAttribute('data-focus');
+  var ro=isLocked();
+  var h='<div class="app'+(ro?' ro':'')+'">';
+  h+='<header class="top"><svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc95"/><stop offset="1" stop-color="#b8862f"/></linearGradient></defs><g fill="url(#lg)"><ellipse cx="18.2" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-45 18.2 10.0)"/><ellipse cx="13.1" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-65 13.1 13.0)"/><ellipse cx="9.3" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-85 9.3 17.5)"/><ellipse cx="7.3" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-105 7.3 23.0)"/><ellipse cx="7.3" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-125 7.3 29.0)"/><ellipse cx="9.3" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-145 9.3 34.5)"/><ellipse cx="13.1" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-165 13.1 39.0)"/><ellipse cx="29.8" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-135 29.8 10.0)"/><ellipse cx="34.9" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-115 34.9 13.0)"/><ellipse cx="38.7" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-95 38.7 17.5)"/><ellipse cx="40.7" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-75 40.7 23.0)"/><ellipse cx="40.7" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-55 40.7 29.0)"/><ellipse cx="38.7" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-35 38.7 34.5)"/><ellipse cx="34.9" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-15 34.9 39.0)"/></g><path d="M26.5 9 L17 27 h6.5 L20 40 L31.5 20.5 H25 L28.5 9 Z" fill="url(#lg)" stroke="#0a0d14" stroke-width=".8"/></svg><div class="title"><h1>'+(state.alliance?esc(state.alliance):'Alliance Planner')+'</h1><small>Kingshot · members, power &amp; event groups · Made by Gigi</small></div>';
+  h+='<nav class="tabs"><a href="#leden" class="'+(r.tab==='leden'?'on':'')+'">Members</a><a href="#events" class="'+(r.tab==='events'?'on':'')+'">Events</a><a href="#instellingen" class="'+(r.tab==='instellingen'?'on':'')+'">Settings</a>'+(CLOUD?(cloud.user?'<button class="btn sm" data-act="logout" title="Log out">🔓 '+esc(r4Name(cloud.user)||'R4')+' · Log out</button>':'<button class="btn sm gold" data-act="login">🔒 R4 login</button>'):state.lock?(ro?'<button class="btn sm gold" data-act="login">🔒 R4 login</button>':'<button class="btn sm" data-act="lockme" title="Lock editing again">🔓 R4 · Lock</button>'):'')+(installEvt&&!isStandalone?'<button class="btn sm" data-allow="install">📲 Install app</button>':'')+'</nav></header>';
+  if(r.tab==='events')h+=viewEvents(r.ev);
+  else if(r.tab==='instellingen')h+=viewSettings();
+  else h+=viewMembers();
+  h+='<span class="meander"></span><footer class="greek"><span class="laurel">❧</span>Made by <b>Gigi</b><span class="laurel" style="display:inline-block;transform:scaleX(-1)">❧</span></footer></div>';
+  h+=CLOUD?cloudBar():ro?'<div class="savebar"><span class="small">👁 View only — R4s can log in to make changes</span><button class="btn gold sm" data-act="login">🔒 R4 login</button></div>':saveBar();
+  if(ui.login&&CLOUD)h+='<div class="modal" data-allow><form class="card" data-form="login" style="width:340px"><h2>R4 login</h2><p class="muted small">Log in with your R4 username and password to make changes.</p><input type="text" name="email" placeholder="Username" autocomplete="username" autocapitalize="none" spellcheck="false" value="'+esc(ui.loginEmail||'')+'" style="width:100%;margin-bottom:8px"><input type="password" name="pw" placeholder="Password" autocomplete="current-password" style="width:100%">'+(ui.loginErr?'<p class="small" style="color:var(--red);margin:8px 0 0">'+esc(ui.loginErr)+'</p>':'')+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" class="btn ghost" data-act="closelogin">Cancel</button><button class="btn gold">Log in</button></div></form></div>';
+  else if(ui.login)h+='<div class="modal" data-allow><form class="card" data-form="login" style="width:340px"><h2>R4 login</h2><p class="muted small">Enter the R4 password to make changes.</p><input type="password" name="pw" placeholder="Password" style="width:100%" autofocus><label class="row small muted" style="gap:6px;margin-top:10px"><input type="checkbox" name="remember"> Remember on this device</label>'+(ui.loginErr?'<p class="small" style="color:var(--red);margin:8px 0 0">Wrong password</p>':'')+'<div class="row" style="margin-top:12px;justify-content:flex-end"><button type="button" class="btn ghost" data-act="closelogin">Cancel</button><button class="btn gold">Unlock</button></div></form></div>';
+  root.innerHTML=h;
+  if(ro){[].forEach.call(root.querySelectorAll('input,select,textarea,button'),function(el){if(!el.closest(ALLOW))el.disabled=true})}
+  if(ui.login){var em=root.querySelector('[data-form=login] input[name=email]'),pi=root.querySelector('[data-form=login] input[name=pw]');if(em&&!em.value)em.focus();else if(pi)pi.focus()}
+  if(focusKey){var el=root.querySelector('[data-focus="'+focusKey+'"]');if(el){el.focus();if(el.setSelectionRange&&el.type==='text'){var l=el.value.length;try{el.setSelectionRange(l,l)}catch(x){}}}}
+}
+
+function cloudBar(){
+  var dot,txt;
+  if(!cloud.ready){dot=cloud.status==='offline'||cloud.status==='error'?'var(--red)':'var(--gold)';txt=cloud.status==='offline'?'⚠ Offline — showing the last loaded data':cloud.status==='error'?'⚠ Database error: '+esc(cloud.err||''):'Connecting to the database…'}
+  else if(cloud.pending){dot='var(--gold)';txt='Saving…'}
+  else{dot='var(--green)';txt=cloud.user?'Live · changes are saved for everyone':'Live · view only'}
+  return '<div class="savebar"><span class="dot" style="background:'+dot+'"></span><span class="small">'+txt+'</span>'+(cloud.ready&&!cloud.user?'<button class="btn gold sm" data-act="login">🔒 R4 login</button>':'')+'</div>';
+}
+function saveBar(){
+  var txt=dirty?'Saved in this browser · <b style="color:var(--gold2)">not yet in a file</b>':'Saved in this browser';
+  return '<div class="savebar'+(dirty?' dirty':'')+'"><span class="dot"></span><span class="small">'+txt+'</span><button class="btn '+(dirty?'gold':'')+' sm" data-act="download">⬇ Download file with data</button></div>';
+}
+
+function cloudBanner(){
+  if(!CLOUD||!cloud.ready||!cloud.empty)return '';
+  var n=(seed.members||[]).length,e=(seed.events||[]).length;
+  if(cloud.user)return '<div class="card" style="border-color:var(--gold)"><h2>Online database is empty</h2><p class="muted small">Upload the data stored in this app file to the database so everyone sees it'+(n?' ('+n+' members, '+e+' events)':'')+'. You only need to do this once.</p><button class="btn gold" data-act="migrate"'+(n||e?'':' disabled')+'>☁ Upload data to the database</button></div>';
+  return '<div class="hint" style="margin-bottom:14px">No data online yet. An R4 needs to log in and upload the data first.</div>';
+}
+function viewMembers(){
+  var ms=state.members.slice();var banner=cloudBanner();
+  var total=0,act=0;ms.forEach(function(m){total+=m.power;if(m.active!==false)act++});
+  var sorted=sortedMembers();
+  if(ui.sort==='name')ms.sort(function(a,b){return a.name.localeCompare(b.name)});else if(ui.sort==='tc')ms.sort(function(a,b){return (b.tc||0)-(a.tc||0)||b.power-a.power});else ms=sorted.slice();
+  var q=ui.search.toLowerCase();
+  var shown=ms.filter(function(m){return (!q||m.name.toLowerCase().indexOf(q)>=0)&&(!ui.lg||(ui.lg==='none'?!m.legion:String(m.legion)===ui.lg))});
+  var l1=ms.filter(function(m){return m.legion=='1'}).length,l2=ms.filter(function(m){return m.legion=='2'}).length;
+  var maxP=sorted.length?sorted[0].power:1;
+  var h=banner+'<div class="stats"><div class="stat"><b>'+ms.length+'</b><span>Members</span></div><div class="stat"><b>'+act+'</b><span>Active</span></div><div class="stat"><b>'+fmt(total)+'</b><span>Total power</span></div><div class="stat"><b>'+fmt(ms.length?total/ms.length:0)+'</b><span>Average</span></div><div class="stat"><b>'+l1+' / '+l2+'</b><span>Legion 1 / Legion 2</span></div></div>';
+  h+='<div class="card eo"><h2>Add member</h2><form class="row" data-form="add"><input type="text" name="name" placeholder="Name" class="grow" required data-focus="addname"><input type="text" name="power" placeholder="Power, e.g. 45.2M" style="width:170px" required><button class="btn gold">Add</button></form>';
+  h+='<details style="margin-top:12px"'+(ui.bulkOpen?' open':'')+' data-bulk><summary class="muted" style="cursor:pointer">Paste many at once — add new members or update everyone’s power</summary><p class="muted small">One member per line: <code>Name, power</code> (tab, semicolon or space also work). Power can be 45.2M, 45.2 or 45200000. Names are matched without caring about capitals, so existing members just get their new power.<br><b>Kingshot Oracle lists work too:</b> paste the member list from Discord (all pages at once is fine); the name, power and TC level are used. Decorated names (ᵀᴴᴱ, 兮༒, 乇…) are matched to your existing members, and the import result shows which ones were matched by a similar name so you can check them.<br><b>Quick update:</b> click <i>Copy current list</i>, paste it in Notes/Discord, change the numbers, paste it back here and click Import.</p><textarea id="bulk" placeholder="DragonSlayer, 82.4M&#10;Luna; 61,7&#10;KnightBob 39500000"></textarea><div class="row" style="margin-top:8px"><button class="btn gold" data-act="bulk">Import</button><label class="row small muted" style="gap:6px"><input type="checkbox" id="bulkonly"'+(ui.bulkOnly?' checked':'')+'> Only update existing members (don’t add new names)</label><span class="grow"></span><button class="btn" data-act="copylist">Copy current list</button></div>'+bulkReport()+'</details></div>';
+  h+='<div class="card"><div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">Member list</h2><span class="eo">'+(ms.length?delBtn('all','🗑 Delete all'):'')+'</span><input type="text" placeholder="Search…" value="'+esc(ui.search)+'" data-f="search" data-focus="search" style="width:180px"><select data-f="lg"><option value="">All legions</option><option value="1"'+(ui.lg==='1'?' selected':'')+'>Legion 1</option><option value="2"'+(ui.lg==='2'?' selected':'')+'>Legion 2</option><option value="none"'+(ui.lg==='none'?' selected':'')+'>No legion set</option></select><select data-f="sort"><option value="power"'+(ui.sort==='power'?' selected':'')+'>By power</option><option value="name"'+(ui.sort==='name'?' selected':'')+'>By name</option><option value="tc"'+(ui.sort==='tc'?' selected':'')+'>By TC level</option></select></div>';
+  if(!ms.length){h+='<div class="empty">No members yet. Add them above or paste a whole list at once.</div></div>';return h}
+  h+='<div style="overflow-x:auto"><table><thead><tr><th>#</th><th>Name</th><th class="num">Power</th><th title="Town Center level">TC</th><th>Tier</th><th>Updated</th><th>Legion</th><th>Active</th><th></th></tr></thead><tbody>';
+  shown.forEach(function(m){
+    var rank=sorted.indexOf(m)+1,t=tierOf(m);
+    h+='<tr><td class="rank">'+rank+'</td><td><input type="text" value="'+esc(m.name)+'" data-mf="name" data-id="'+m.id+'"></td><td class="num" style="width:150px"><input type="text" value="'+fmt(m.power)+'" data-mf="power" data-id="'+m.id+'" style="width:100px;text-align:right"><div class="bar"><i style="width:'+Math.round(m.power/maxP*100)+'%"></i></div></td><td><input type="number" min="1" max="99" value="'+(m.tc||'')+'" data-mf="tc" data-id="'+m.id+'" placeholder="–" style="width:58px;text-align:center"></td><td><span class="tier t'+t+'">'+(t===1?'Top 20%':t===2?'Middle':'Bottom 40%')+'</span></td><td style="white-space:nowrap">'+ago(m.updated)+delta(m)+'</td><td>'+lgToggle(m)+'</td><td><input type="checkbox" data-mf="active" data-id="'+m.id+'"'+(m.active!==false?' checked':'')+'></td><td class="num">'+delBtn('m:'+m.id)+'</td></tr>';
+  });
+  h+='</tbody></table></div><p class="muted small eo" style="margin:10px 0 0">Tip: type a new power and press <b>Enter</b> to jump to the next member. Power that hasn’t been updated for 7+ days turns orange. Tick L1 or L2 to set which legion a member plays in (click again to clear). On an event, “All active” and “Top” only add members of that event’s legion, plus members with no legion set. Inactive members are always skipped.</p></div>';
+  return h;
+}
+function bulkReport(){var r=ui.report;if(!r)return '';var h='<div class="hint" style="margin-top:12px"><div class="row" style="margin-bottom:6px"><b class="grow">Import result: '+r.upd.length+' updated, '+r.same+' unchanged, '+r.add.length+' added'+(r.skip.length?', '+r.skip.length+' skipped':'')+'</b><button class="btn sm ghost" data-act="closereport">Close</button></div>';
+  if(r.upd.length)h+='<div class="small" style="margin-bottom:4px"><b>Updated:</b> '+r.upd.map(function(u){var d=u.n-u.o;return esc(u.name)+(u.via?' <span class="muted">(matched “'+esc(u.via)+'”)</span>':'')+' '+fmt(u.o)+' → '+fmt(u.n)+' <span style="color:'+(d>=0?'var(--green)':'var(--red)')+'">('+(d>=0?'+':'−')+fmt(Math.abs(d))+')</span>'}).join(' · ')+'</div>';
+  if(r.fz&&r.fz.length)h+='<div class="small" style="margin-bottom:4px"><b>Matched by similar name:</b> '+r.fz.map(function(u){return esc(u.name)+' ← “'+esc(u.from)+'”'}).join(' · ')+'</div>';
+  if(r.tc&&r.tc.length)h+='<div class="small" style="margin-bottom:4px"><b>TC level up:</b> '+r.tc.map(function(u){return esc(u.name)+' TC'+u.o+' → TC'+u.n}).join(' · ')+'</div>';
+  if(r.add.length)h+='<div class="small" style="margin-bottom:4px"><b>Added (new):</b> '+r.add.map(esc).join(', ')+'</div>';
+  if(r.skip.length)h+='<div class="small" style="color:#f0a35b"><b>Skipped</b> (not in the list'+(ui.bulkOnly?'':' or no power found')+'): '+r.skip.map(esc).join(', ')+'</div>';
+  var miss=state.members.filter(function(m){return r.seen.indexOf(m.id)<0&&m.active!==false});
+  if(miss.length&&r.upd.length+r.same>0)h+='<div class="small muted" style="margin-top:4px"><b>Not in this paste:</b> '+miss.map(function(m){return esc(m.name)}).join(', ')+'</div>';
+  return h+'</div>'}
+function lgToggle(m){var h='<span class="lg">';['1','2'].forEach(function(v){var on=String(m.legion)===v;h+='<label class="'+(on?'on':'')+'"><input type="checkbox" data-mf="legion" data-v="'+v+'" data-id="'+m.id+'"'+(on?' checked':'')+'>L'+v+'</label>'});return h+'</span>'}
+var SMALLCAPS={'ᴀ':'a','ʙ':'b','ᴄ':'c','ᴅ':'d','ᴇ':'e','ғ':'f','ɢ':'g','ʜ':'h','ɪ':'i','ᴊ':'j','ᴋ':'k','ʟ':'l','ᴍ':'m','ɴ':'n','ᴏ':'o','ᴘ':'p','ʀ':'r','ꜱ':'s','ᴛ':'t','ᴜ':'u','ᴠ':'v','ᴡ':'w','ʏ':'y','ᴢ':'z','乇':'e','卂':'a','丂':'s','尺':'r','爪':'m','几':'n','ㄖ':'o','匚':'c','卄':'h','丨':'i','ㄒ':'t','ㄩ':'u','乃':'b','千':'f','长':'k','ㄥ':'l','ㄚ':'y','乙':'z','卩':'p','ᗩ':'a','ᗷ':'b','ᑕ':'c','ᗪ':'d','ᗴ':'e','ᖴ':'f','ᕼ':'h','ᒍ':'j','ᒪ':'l','ᗰ':'m','ᑎ':'n','ᑭ':'p','ᖇ':'r','ᔕ':'s','ᑌ':'u','ᐯ':'v','ᗯ':'w','᙭':'x','Ꭵ':'i'};
+function nameKey(n){
+  var t=String(n||'').normalize('NFKD').replace(/[̀-ͯ]/g,'');
+  t=t.replace(/./gu,function(c){return SMALLCAPS[c]||c}).toLowerCase();
+  var ascii=t.replace(/[^a-z0-9]/g,'');
+  if(ascii.length>=2)return ascii;
+  try{return t.replace(/[^\p{L}\p{N}]/gu,'')}catch(e){return t.replace(/\s/g,'')}
+}
+function cleanName(n){n=String(n).replace(/\\(.)/g,'$1');try{return n.replace(/^[\s兮༒༺༻\p{S}]+|[\s兮༒༺༻\p{S}]+$/gu,'')||n.trim()}catch(e){return n.trim()}}
+function findMember(name,used){
+  var low=name.toLowerCase().trim(),key=nameKey(name);
+  var ex=state.members.filter(function(x){return used.indexOf(x.id)<0&&(x.name.toLowerCase().trim()===low||x.alias===key||nameKey(x.name)===key)})[0];
+  if(ex)return {m:ex,fuzzy:false};
+  if(key.length<4)return null;
+  var best=null,bestR=0,tie=false;
+  state.members.forEach(function(x){if(used.indexOf(x.id)>=0)return;var k=nameKey(x.name);if(k.length<4)return;
+    var a=k.length<key.length?k:key,b=k.length<key.length?key:k;if(b.indexOf(a)<0)return;var r=a.length/b.length;
+    if(r>bestR){best=x;bestR=r;tie=false}else if(r===bestR)tie=true});
+  return best&&bestR>=0.5&&!tie?{m:best,fuzzy:true}:null;
+}
+function parseTC(line){var t=String(line).match(/\bTC\s*(\d{1,2})\b/i);return t?+t[1]:null}
+function parseOracle(line){
+  var parts=String(line).split(/\s*[·•]\s*/);if(parts.length<2)return null;
+  var pw=parts[1].trim();if(!/^[\d.,]+\s*[KMB]$/i.test(pw))return null;
+  var name=parts[0].replace(/^\s*`?\s*#\s*\d+\s*`?\s*/,'').replace(/\*\*/g,'').replace(/^`+|`+$/g,'').trim();
+  if(!name)return null;return [line,cleanName(name),pw];
+}
+function parseLine(line){return line.match(/^(.*?)(?:\s*[\t;|:]\s*|\s*,\s+|(?<!\d),\s*|\s+)(\d[\d.,]*\s*(?:mld|[kmb])?)$/i)}
+function setPower(m,p){if(m.power!==p){m.prev=m.power;m.power=p;m.updated=Date.now()}else if(!m.updated)m.updated=Date.now()}
+function ago(ts){if(!ts)return '<span class="muted small">—</span>';var d=Math.floor((Date.now()-ts)/864e5);var txt=d<=0?'today':d===1?'1 day ago':d+' days ago';return '<span class="small" style="color:'+(d>=7?'#f0a35b':'var(--muted)')+'">'+txt+'</span>'}
+function delta(m){if(m.prev==null||!m.updated||Date.now()-m.updated>864e5*7)return '';var d=m.power-m.prev;if(!d)return '';return ' <span class="small" style="color:'+(d>0?'var(--green)':'var(--red)')+'">'+(d>0?'+':'−')+fmt(Math.abs(d))+'</span>'}
+function fitsLegion(m,e){return !m.legion||String(m.legion)===String(e.legion)}
+function delBtn(key,label){
+  if(key==='all'&&ui.confirmDel===key)return '<span class="small" style="color:var(--red)">Delete all '+state.members.length+' members?</span> <button class="btn sm danger" data-act="del" data-key="all">Yes, delete all</button> <button class="btn sm ghost" data-act="nodel">No</button>';
+  if(key==='everything'&&ui.confirmDel===key)return '<span class="small" style="color:var(--red)">Delete all members and events?</span> <button class="btn sm danger" data-act="del" data-key="everything">Yes, delete everything</button> <button class="btn sm ghost" data-act="nodel">No</button>';
+  if(ui.confirmDel===key)return '<button class="btn sm danger" data-act="del" data-key="'+key+'">Sure?</button> <button class="btn sm ghost" data-act="nodel">No</button>';
+  return '<button class="btn sm ghost danger eo" data-act="askdel" data-key="'+key+'">'+(label||'×')+'</button>';
+}
+
+function fmtDate(d,t){if(!d)return 'No date';try{var x=new Date(d+'T00:00');return x.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+(t?' · '+t:'')}catch(e){return d}}
+
+function viewEvents(id){
+  var evs=state.events.slice().sort(function(a,b){return (a.date||'9').localeCompare(b.date||'9')});
+  var cur=id?ev(id):null;
+  var h='<div class="layout"><aside><div class="card eo"><h2>New event</h2><form data-form="newev" style="display:grid;gap:8px"><select name="type"><option value="swordland">Swordland Showdown</option><option value="tri">Tri-Alliance Clash</option><option value="custom">Other event</option></select><input type="text" name="name" placeholder="Name (optional)"><div class="row"><input type="date" name="date" class="grow"><input type="time" name="time" style="width:100px"></div><select name="legion"><option value="1">Legion 1</option><option value="2">Legion 2</option></select><button class="btn gold">Create event</button></form></div><div class="evlist">';
+  if(!evs.length)h+='<p class="muted small">No events planned yet.</p>';
+  evs.forEach(function(e){h+='<a href="#ev-'+e.id+'" class="'+(cur&&cur.id===e.id?'on':'')+'"><span class="badge b-'+e.type+'">'+(e.type==='tri'?'Tri-Alliance':e.type==='swordland'?'Swordland':'Event')+'</span> <b>'+esc(e.name)+'</b><div class="d">'+fmtDate(e.date,e.time)+' · Legion '+e.legion+' · '+e.participants.length+' players</div></a>'});
+  h+='</div></aside><section>';
+  if(!cur){h+='<div class="empty">'+(evs.length?'Pick an event to see its line-up.':'Create an event first. Then pick participants and let the roles be assigned automatically.')+'</div>'}
+  else h+=viewEvent(cur);
+  h+='</section></div>';return h;
+}
+
+function viewEvent(e){
+  var parts=e.participants.map(member).filter(Boolean).sort(function(a,b){return b.power-a.power});
+  var tot=0;parts.forEach(function(m){tot+=m.power});
+  var avail=sortedMembers().filter(function(m){return e.participants.indexOf(m.id)<0});
+  var h='<div class="card"><div class="row" style="margin-bottom:12px"><span class="badge b-'+e.type+'">'+PRESETS[e.type].label+'</span><input type="text" value="'+esc(e.name)+'" data-ef="name" class="grow" style="font-weight:700;font-size:16px"><span>'+delBtn('e:'+e.id,'Delete event')+'</span></div>';
+  h+='<div class="row"><label class="f">Date<input type="date" value="'+esc(e.date)+'" data-ef="date"></label><label class="f">Time<input type="time" value="'+esc(e.time)+'" data-ef="time"></label><label class="f">Legion<select data-ef="legion"><option value="1"'+(e.legion=='1'?' selected':'')+'>Legion 1</option><option value="2"'+(e.legion=='2'?' selected':'')+'>Legion 2</option></select></label><label class="f">Max. main players<input type="number" min="0" value="'+(+e.max||0)+'" data-ef="max" style="width:90px"></label><span class="muted small eo" style="align-self:flex-end;padding-bottom:8px">0 = no limit. Anyone beyond the limit goes to Reserve.</span></div></div>';
+
+  h+='<div class="card"><h2>Participants <span class="muted small" style="font-family:Inter">'+parts.length+' players · '+fmt(tot)+'</span></h2><div class="row eo" style="margin-bottom:10px"><select data-act-change="addpart" class="grow"><option value="">+ Add member…</option>';
+  avail.sort(function(a,b){return (fitsLegion(b,e)?1:0)-(fitsLegion(a,e)?1:0)||b.power-a.power});avail.forEach(function(m){h+='<option value="'+m.id+'">'+esc(m.name)+' — '+fmt(m.power)+(m.tc?' · TC'+m.tc:'')+(m.legion?' · L'+m.legion:'')+(m.active===false?' (inactive)':'')+'</option>'});
+  h+='</select><button class="btn" data-act="addall">All active (Legion '+e.legion+')</button><span class="row" style="gap:4px"><button class="btn" data-act="addtop">Top</button><input type="number" id="topn" min="1" value="'+(+e.max||20)+'" style="width:64px"></span><button class="btn ghost danger" data-act="clearparts">Clear</button></div>';
+  if(!state.members.length)h+='<div class="hint">First add members on the <a href="#leden" style="color:var(--gold2)">Members</a> tab.</div>';
+  else if(!parts.length)h+='<p class="muted small">Pick players from the menu, or add all active members or the top X at once.</p>';
+  h+='<div class="chips">';parts.forEach(function(m){h+='<span class="chip">'+esc(m.name)+(m.legion&&!fitsLegion(m,e)?'<span class="lgtag" title="Plays in another legion">L'+m.legion+'</span>':'')+' <span class="p">'+fmt(m.power)+'</span><button class="eo" data-act="rmpart" data-id="'+m.id+'" title="Remove">×</button></span>'});h+='</div></div>';
+
+  // config
+  h+='<div class="card eo"><details class="cfg"'+(ui.openCfg?' open':'')+' data-cfg><summary>⚙ Customize roles &amp; groups</summary><p class="muted small">The strongest players fill the top role first, then the next one. Tick <b>Groups</b> to split a role into several groups and set how many; players are then spread so total power per group is as even as possible. Unticked, the role stays one group. “Linked” makes a role balance together with the groups of the role above it (e.g. Lane 1 support tops up the Lane 1 anchors).</p><div class="hint" style="margin-bottom:10px"><b>What is “Rest”?</b> A role with Rest ticked gets <b>everyone who is left over</b> instead of a fixed number of players. Example (Swordland, 20 participants): DPS count 4 → the 4 strongest players; Tank count 6 → the next 6; Support with Rest → the remaining 10. So you never have to calculate how many players the last role needs: whether you have 15 or 30 participants, it fills itself. The <b>Count</b> box is greyed out while Rest is on, because the number doesn’t matter then. Only <b>one role at a time</b> can be Rest; ticking it on another role turns it off on the previous one. If no role has Rest and there are more participants than all counts combined, the remaining players go to <b>Reserve</b>.</div><div style="overflow-x:auto"><table class="cfgt"><thead><tr><th>Role</th><th>Count</th><th title="Gets everyone who is left over instead of a fixed number">Rest ⓘ</th><th title="Tick to split this role into several groups">Groups</th><th>Group name</th><th>Linked</th><th>Description</th><th></th></tr></thead><tbody>';
+  e.roles.forEach(function(r,i){
+    h+='<tr><td><input type="text" value="'+esc(r.name)+'" data-rf="name" data-i="'+i+'"></td><td><input type="number" min="0" value="'+(+r.count||0)+'" data-rf="count" data-i="'+i+'"'+(r.rest?' disabled':'')+'></td><td><input type="checkbox" data-rf="rest" data-i="'+i+'"'+(r.rest?' checked':'')+'></td><td style="white-space:nowrap"><input type="checkbox" data-rf="usegroups" data-i="'+i+'"'+((+r.groups||1)>1?' checked':'')+' title="Split this role into groups">'+((+r.groups||1)>1?' <input type="number" min="2" value="'+(+r.groups)+'" data-rf="groups" data-i="'+i+'" style="width:60px" title="Number of groups">':'')+'</td><td><input type="text" value="'+esc(r.groupLabel)+'" data-rf="groupLabel" data-i="'+i+'"></td><td><input type="checkbox" data-rf="link" data-i="'+i+'"'+(r.link?' checked':'')+(i===0?' disabled':'')+'></td><td><input type="text" value="'+esc(r.desc)+'" data-rf="desc" data-i="'+i+'" style="min-width:220px"></td><td class="num"><button class="btn sm ghost" data-act="rup" data-i="'+i+'"'+(i===0?' disabled':'')+'>↑</button><button class="btn sm ghost danger" data-act="rdel" data-i="'+i+'">×</button></td></tr>';
+  });
+  h+='</tbody></table></div><div class="row" style="margin-top:8px"><button class="btn sm" data-act="radd">+ Role</button><button class="btn sm ghost" data-act="rreset">Reset to default</button></div></details></div>';
+
+  // callers + generate
+  var opt=function(sel){var o='<option value="">—</option>';parts.forEach(function(m){o+='<option value="'+m.id+'"'+(sel===m.id?' selected':'')+'>'+esc(m.name)+'</option>'});return o};
+  h+='<div class="card"><div class="row"><label class="f">Caller<select data-ef="lead">'+opt(e.lead)+'</select></label><label class="f">Backup caller<select data-ef="backup">'+opt(e.backup)+'</select></label><span class="grow"></span><button class="btn gold eo" data-act="auto"'+(parts.length?'':' disabled style="opacity:.5"')+'>⚡ Auto-assign</button>'+(e.assignment?'<button class="btn" data-act="brief">Copy briefing</button>':'')+'</div></div>';
+
+  if(e.assignment)h+=viewAssignment(e,parts);
+  return h;
+}
+
+function groupsOf(e,parts){
+  var map={};e.roles.forEach(function(r){map[r.id]={role:r,groups:[]};for(var g=0;g<Math.max(1,+r.groups||1);g++)map[r.id].groups.push([])});
+  var reserve=[],none=[];
+  parts.forEach(function(m){
+    var a=e.assignment[m.id];
+    if(!a){none.push(m);return}
+    if(a.role==='reserve'){reserve.push(m);return}
+    var R=map[a.role];if(!R){none.push(m);return}
+    var g=Math.min(a.group,R.groups.length-1);R.groups[g].push(m);
+  });
+  return {map:map,reserve:reserve,none:none};
+}
+function gName(r,g){return (+r.groups||1)>1?r.groupLabel+' '+(g+1):(r.groupLabel||r.name)}
+
+function moveSelect(e,m,cur){
+  var o='<select data-move="'+m.id+'" title="Move">';
+  e.roles.forEach(function(r){for(var g=0;g<Math.max(1,+r.groups||1);g++){var v=r.id+':'+g;o+='<option value="'+v+'"'+(cur===v?' selected':'')+'>'+esc(r.name+((+r.groups||1)>1?' · '+(g+1):''))+'</option>'}});
+  o+='<option value="reserve:0"'+(cur==='reserve:0'?' selected':'')+'>Reserve</option></select>';return o;
+}
+function memberRows(e,list,cur){var h='';list.sort(function(a,b){return b.power-a.power}).forEach(function(m){var star=(e.lead===m.id?' 📣':e.backup===m.id?' 🔁':'');h+='<div class="m"><span class="n">'+esc(m.name)+star+'</span>'+(m.tc?'<span class="lgtag" title="Town Center level">TC'+m.tc+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+moveSelect(e,m,cur)+'</div>'});return h||'<div class="muted small">Empty</div>'}
+function sum(l){var s=0;l.forEach(function(m){s+=m.power});return s}
+
+function viewAssignment(e,parts){
+  var G=groupsOf(e,parts);
+  var h='<div class="roles-grid">';
+  e.roles.forEach(function(r,i){
+    var R=G.map[r.id];var all=[];R.groups.forEach(function(g){all=all.concat(g)});
+    h+='<div class="role r-'+(i%5)+'"><div class="role-h"><h3>'+esc(r.name)+'</h3><span class="muted small">'+all.length+' players · '+fmt(sum(all))+'</span><p>'+esc(r.desc)+'</p></div><div class="groups">';
+    R.groups.forEach(function(list,g){h+='<div class="group"><div class="group-h"><b>'+esc(gName(r,g))+'</b><span>'+fmt(sum(list))+'</span></div>'+memberRows(e,list,r.id+':'+g)+'</div>'});
+    h+='</div></div>';
+  });
+  if(G.reserve.length)h+='<div class="role r-res"><div class="role-h"><h3>Reserve</h3><span class="muted small">'+G.reserve.length+' players</span><p>Substitutes: beyond the max. main players or moved manually.</p></div><div class="groups"><div class="group">'+memberRows(e,G.reserve,'reserve:0')+'</div></div></div>';
+  if(G.none.length)h+='<div class="role r-res"><div class="role-h"><h3>Not assigned yet</h3><p>Added later. Move them manually or click Auto-assign again.</p></div><div class="groups"><div class="group">'+memberRows(e,G.none,'')+'</div></div></div>';
+  // lane totals when linked
+  var linked=e.roles.some(function(r){return r.link});
+  if(linked){
+    var lab={};e.roles.forEach(function(r,i){var base=r;var k=Math.max(1,+r.groups||1);G.map[r.id].groups.forEach(function(list,g){var key=r.groupLabel+'|'+g+'|'+k;lab[key]=lab[key]||{name:gName(r,g),n:0,p:0};lab[key].n+=list.length;lab[key].p+=sum(list)})});
+    var keys=Object.keys(lab).filter(function(k){return true});
+    h+='<div class="card"><h2>Total per group (linked roles combined)</h2><div class="stats" style="margin:0">';
+    keys.forEach(function(k){h+='<div class="stat"><b>'+fmt(lab[k].p)+'</b><span>'+esc(lab[k].name)+' · '+lab[k].n+' players</span></div>'});
+    h+='</div></div>';
+  }
+  h+='</div>';return h;
+}
+
+function briefing(e){
+  var parts=e.participants.map(member).filter(Boolean);
+  var G=groupsOf(e,parts);
+  var icon=e.type==='tri'?'🛡️':e.type==='swordland'?'⚔️':'📋';
+  var t=icon+' '+e.name+' — '+fmtDate(e.date,e.time)+' (Legion '+e.legion+')\n';
+  var L=member(e.lead),B=member(e.backup);
+  if(L||B)t+='📣 Caller: '+(L?L.name:'—')+' | Backup: '+(B?B.name:'—')+'\n';
+  e.roles.forEach(function(r){
+    t+='\n【'+r.name.toUpperCase()+'】\n';
+    G.map[r.id].groups.forEach(function(list,g){
+      list.sort(function(a,b){return b.power-a.power});
+      t+=((+r.groups||1)>1?gName(r,g)+': ':'')+(list.length?list.map(function(m){return m.name}).join(', '):'—')+'\n';
+    });
+  });
+  if(G.reserve.length)t+='\n【RESERVE】\n'+G.reserve.map(function(m){return m.name}).join(', ')+'\n';
+  return t;
+}
+
+/* ---------- events ---------- */
+root.addEventListener('submit',function(ev){
+  ev.preventDefault();var f=ev.target;var kind=f.getAttribute('data-form');
+  if(kind==='login'&&CLOUD){ui.loginEmail=f.email.value.trim();cloudLogin(ui.loginEmail,f.pw.value);return}
+  if(kind==='login'){var h2=state.lock?hashPw(state.lock.salt,f.pw.value):'';if(state.lock&&h2===state.lock.hash){unlockWith(h2,f.remember.checked);ui.login=false;toast('Unlocked — you can edit now');render()}else{ui.loginErr=true;render()}return}
+  if(kind==='setpw'){var a1=f.pw1.value,a2=f.pw2.value;if(a1.length<4){toast('Use at least 4 characters');return}if(a1!==a2){toast('The passwords don’t match');return}var salt=uid()+uid();var hh=hashPw(salt,a1);state.lock={salt:salt,hash:hh};unlockWith(hh,false);toast('Password set — download the file to share it');return touch()}
+  if(kind==='add'){
+    var name=f.name.value.trim(),p=parsePower(f.power.value);if(!name)return;
+    var ex=state.members.filter(function(m){return m.name.toLowerCase()===name.toLowerCase()})[0];
+    if(ex)setPower(ex,p);else state.members.push({id:uid(),name:name,power:p,active:true,updated:Date.now()});
+    touch();var el=root.querySelector('[data-focus="addname"]');if(el)el.focus();
+  }
+  if(kind==='newev'){
+    var type=f.type.value;var e={id:uid(),type:type,name:f.name.value.trim()||PRESETS[type].label,date:f.date.value,time:f.time.value,legion:f.legion.value,max:PRESETS[type].max,participants:[],roles:presetRoles(type),assignment:null,lead:'',backup:''};
+    state.events.push(e);persist();go('ev-'+e.id);
+  }
+});
+root.addEventListener('click',function(ev){
+  var b=ev.target.closest('[data-act]');if(!b||b.tagName==='SELECT')return;
+  var act=b.getAttribute('data-act');var r=route();var e=r.ev?ev_(r.ev):null;
+  if(act==='download')return download();
+  if(act==='login'){ui.login=true;ui.loginErr=false;return render()}
+  if(act==='closelogin'){ui.login=false;return render()}
+  if(act==='lockme'){lockNow();toast('Locked — view only');return render()}
+  if(act==='logout'){if(cloud.U)cloud.U.signOut(cloud.auth).then(function(){toast('Logged out — view only')});return}
+  if(act==='migrate'){state.alliance=seed.alliance||state.alliance;state.members=JSON.parse(JSON.stringify(seed.members||[]));state.events=JSON.parse(JSON.stringify(seed.events||[]));toast('Uploading '+state.members.length+' members and '+state.events.length+' events…');return touch()}
+  if(act==='rmpw'){state.lock=null;lockNow();toast('Password removed');return touch()}
+  if(act==='askdel'){ui.confirmDel=b.getAttribute('data-key');return render()}
+  if(act==='nodel'){ui.confirmDel=null;return render()}
+  if(act==='del'){
+    var k=b.getAttribute('data-key');ui.confirmDel=null;
+    if(k==='all'){var n=state.members.length;state.members=[];state.events.forEach(function(x){x.participants=[];x.assignment=null;x.lead='';x.backup=''});ui.report=null;toast(n+' members deleted');return touch()}
+    if(k==='everything'){state.members=[];state.events=[];ui.report=null;toast('Everything deleted');persist();return go('leden')}
+    if(k.indexOf('m:')===0){var id=k.slice(2);state.members=state.members.filter(function(m){return m.id!==id});state.events.forEach(function(x){x.participants=x.participants.filter(function(p){return p!==id});if(x.assignment)delete x.assignment[id]})}
+    if(k.indexOf('e:')===0){var id2=k.slice(2);state.events=state.events.filter(function(x){return x.id!==id2});persist();return go('events')}
+    return touch();
+  }
+  if(act==='bulk'){
+    var txt=(document.getElementById('bulk')||{}).value||'';var only=(document.getElementById('bulkonly')||{}).checked;ui.bulkOnly=only;
+    var R={upd:[],add:[],skip:[],same:0,seen:[],fz:[],tc:[]};
+    txt.split(/\r?\n/).forEach(function(line){
+      line=line.trim();if(!line)return;
+      if(/^(##|-#)\s/.test(line)||/[—-]\s*Members\s*$/i.test(line)||/Kingshot Oracle\s*·\s*Page/i.test(line))return;
+      var m=parseOracle(line)||parseLine(line);
+      if(!m){R.skip.push(line);return}
+      var name=m[1].replace(/[\s,;:\-–]+$/,'').trim(),p=parsePower(m[2]);if(!name){R.skip.push(line);return}
+      var tc=parseTC(line);
+      var f=findMember(name,R.seen),ex=f&&f.m;
+      if(ex&&tc!=null&&ex.tc!==tc){if(ex.tc)R.tc.push({name:ex.name,o:ex.tc,n:tc});ex.tc=tc}
+      if(ex){R.seen.push(ex.id);if(f.fuzzy&&!ex.alias)ex.alias=nameKey(name);var via=f.fuzzy?name:null;if(ex.power===p){R.same++;if(via)R.fz.push({name:ex.name,from:name})}else{R.upd.push({name:ex.name,o:ex.power,n:p,via:via});setPower(ex,p)}}
+      else if(only)R.skip.push(name);
+      else{var nm={id:uid(),name:name,power:p,active:true,updated:Date.now(),alias:nameKey(name)};if(tc!=null)nm.tc=tc;state.members.push(nm);R.seen.push(nm.id);R.add.push(name)}
+    });
+    ui.report=R;ui.bulkOpen=true;
+    var ta=document.getElementById('bulk');if(ta&&(R.upd.length||R.add.length||R.same))ta.value='';
+    toast(R.upd.length+' power updated, '+R.add.length+' added'+(R.tc.length?', '+R.tc.length+' TC level up':''));return touch();
+  }
+  if(act==='closereport'){ui.report=null;return render()}
+  if(act==='copylist'){var t=sortedMembers().map(function(m){return m.name+', '+fmt(m.power)}).join('\n');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('List copied — change the numbers and paste it back')},function(){showText(t)});else showText(t);return}
+  if(!e)return;
+  if(act==='addall'){state.members.forEach(function(m){if(m.active!==false&&fitsLegion(m,e)&&e.participants.indexOf(m.id)<0)e.participants.push(m.id)});return touch()}
+  if(act==='addtop'){var n=+(document.getElementById('topn')||{}).value||20;sortedMembers().filter(function(m){return m.active!==false&&fitsLegion(m,e)}).slice(0,n).forEach(function(m){if(e.participants.indexOf(m.id)<0)e.participants.push(m.id)});return touch()}
+  if(act==='clearparts'){e.participants=[];e.assignment=null;return touch()}
+  if(act==='rmpart'){var id=b.getAttribute('data-id');e.participants=e.participants.filter(function(p){return p!==id});if(e.assignment)delete e.assignment[id];return touch()}
+  if(act==='auto'){autoAssign(e);toast('Line-up created');return touch()}
+  if(act==='brief'){var t=briefing(e);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('Briefing copied — paste it in alliance chat')},function(){showText(t)})}else showText(t);return}
+  if(act==='radd'){e.roles.push({id:uid(),name:'New role',count:5,groups:1,groupLabel:'Group',link:false,rest:false,desc:''});ui.openCfg=true;return touch()}
+  if(act==='rdel'){e.roles.splice(+b.getAttribute('data-i'),1);ui.openCfg=true;return touch()}
+  if(act==='rup'){var i=+b.getAttribute('data-i');var x=e.roles.splice(i,1)[0];e.roles.splice(i-1,0,x);ui.openCfg=true;return touch()}
+  if(act==='rreset'){e.roles=presetRoles(e.type);e.max=PRESETS[e.type].max;e.assignment=null;ui.openCfg=true;return touch()}
+});
+function ev_(id){return ev(id)}
+function showText(t){var w=document.createElement('div');w.className='toast';w.style.cssText+='left:16px;max-width:520px;margin-left:auto';w.innerHTML='<div class="row" style="margin-bottom:6px"><b class="grow">Copy manually</b><button class="btn sm">Close</button></div><textarea style="min-height:220px">'+esc(t)+'</textarea>';document.body.appendChild(w);w.querySelector('button').onclick=function(){w.remove()};var ta=w.querySelector('textarea');ta.focus();ta.select()}
+
+root.addEventListener('toggle',function(ev){if(ev.target.hasAttribute&&ev.target.hasAttribute('data-cfg'))ui.openCfg=ev.target.open;if(ev.target.hasAttribute&&ev.target.hasAttribute('data-bulk'))ui.bulkOpen=ev.target.open},true);
+root.addEventListener('keydown',function(ev){var t=ev.target;if(ev.key==='Enter'&&t.getAttribute&&t.getAttribute('data-mf')==='power'){ev.preventDefault();var all=[].slice.call(root.querySelectorAll('input[data-mf=power]'));var nx=all[all.indexOf(t)+1];ui.focusNext=nx?nx.getAttribute('data-id'):null;t.blur();if(ui.focusNext){var el=root.querySelector('input[data-mf=power][data-id="'+ui.focusNext+'"]');if(el){el.focus();el.select()}ui.focusNext=null}}});
+root.addEventListener('input',function(ev){var t=ev.target;if(t.getAttribute('data-f')==='search'){ui.search=t.value;render()}});
+root.addEventListener('change',function(ev){
+  var t=ev.target,r=route(),e=r.ev?ev_(r.ev):null;
+  if(t.getAttribute('data-f')==='sort'){ui.sort=t.value;return render()}
+  if(t.getAttribute('data-f')==='lg'){ui.lg=t.value;return render()}
+  var mf=t.getAttribute('data-mf');
+  if(mf){var m=member(t.getAttribute('data-id'));if(!m)return;
+    if(mf==='name'){var v=t.value.trim();if(v)m.name=v}
+    else if(mf==='power')setPower(m,parsePower(t.value));
+    else if(mf==='tc'){var v2=parseInt(t.value,10);m.tc=v2>0?v2:undefined}
+    else if(mf==='active')m.active=t.checked;
+    else if(mf==='legion')m.legion=t.checked?t.getAttribute('data-v'):'';
+    return touch()}
+  if(t.getAttribute('data-act-change')==='addpart'&&e&&t.value){e.participants.push(t.value);return touch()}
+  if(!e)return;
+  var ef=t.getAttribute('data-ef');
+  if(ef){e[ef]=ef==='max'?Math.max(0,+t.value||0):t.value;return touch()}
+  var rf=t.getAttribute('data-rf');
+  if(rf){var ro=e.roles[+t.getAttribute('data-i')];ui.openCfg=true;
+    if(rf==='usegroups'){if(t.checked){ro.groups=Math.max(2,+ro.prevGroups||2)}else{ro.prevGroups=ro.groups;ro.groups=1}}
+    else if(rf==='rest'||rf==='link'){ro[rf]=t.checked;if(rf==='rest'&&t.checked)e.roles.forEach(function(o){if(o!==ro)o.rest=false})}
+    else if(rf==='count'||rf==='groups')ro[rf]=Math.max(rf==='groups'?2:0,+t.value||0);
+    else ro[rf]=t.value;
+    return touch()}
+  var mv=t.getAttribute('data-move');
+  if(mv&&e.assignment){var p=t.value.split(':');e.assignment[mv]={role:p[0],group:+p[1]||0};return touch()}
+});
+
+function viewSettings(){
+  if(CLOUD){var h='<div class="card"><h2>R4 accounts</h2><p class="muted small">This planner is connected to an online database: everyone sees the same data, live. R4s log in with a username and password. To add an R4: Firebase console → <b>Authentication → Users → Add user</b>, with email <b>username@'+R4_DOMAIN+'</b> (not a real address — nothing is ever sent to it) and a password. They then log in here with just the username. To remove an R4, delete or disable their user there.</p>'+(cloud.user?'<p class="small" style="margin:0">Logged in as <b style="color:var(--gold2)">'+esc(r4Name(cloud.user))+'</b> · <button class="btn sm" data-act="logout">Log out</button></p>':'<button class="btn gold" data-act="login">🔒 R4 login</button>')+'</div>';}
+  else{var h='<div class="card"><h2>R4 password</h2>';
+  if(!state.lock)h+='<p class="muted small">Set a password so only R4s can change things. Everyone else who opens the file can still see members, events and line-ups, and copy briefings.</p><form class="row" data-form="setpw"><input type="password" name="pw1" placeholder="New password" style="width:200px"><input type="password" name="pw2" placeholder="Repeat password" style="width:200px"><button class="btn gold">Set password</button></form>';
+  else if(isLocked())h+='<p class="muted small">This planner is locked. Log in as R4 to make changes.</p><button class="btn gold" data-act="login">🔒 R4 login</button>';
+  else h+='<p class="muted small">Password is <b style="color:var(--green)">on</b>. You are logged in as R4 on this device. Change it below, or remove it.</p><form class="row" data-form="setpw"><input type="password" name="pw1" placeholder="New password" style="width:200px"><input type="password" name="pw2" placeholder="Repeat password" style="width:200px"><button class="btn">Change password</button><button type="button" class="btn ghost danger" data-act="rmpw">Remove password</button></form>';
+  h+='<p class="muted small" style="margin:10px 0 0">After setting or changing it, click <b>Download file with data</b> and share that new file. The password is stored scrambled (not readable), but this is a lock against changes by ordinary members — not bank-level security: someone with technical knowledge could get around it.</p></div>';
+  }
+  h+='<div class="card"><h2>Alliance</h2><div class="row"><label class="f grow">Alliance name (shown at the top)<input type="text" value="'+esc(state.alliance)+'" data-sf="alliance" placeholder="e.g. [ABC] Iron Knights"></label></div></div>';
+  h+='<div class="card"><h2>Backup</h2><p class="muted small">Copy all your data as text to keep it somewhere safe, or paste an earlier backup to restore everything.</p><div class="row" style="margin-bottom:10px"><button class="btn" data-sact="export">Copy backup</button></div><textarea id="imp" class="eo" placeholder="Paste a backup here…"></textarea><div class="row" style="margin-top:8px"><button class="btn eo" data-sact="import">Restore backup</button></div></div>';
+  h+='<div class="card eo"><h2>Danger zone</h2><p class="muted small">Delete all members and all events'+(CLOUD?' — for everyone':'')+'. The alliance name'+(CLOUD?'':' and R4 password')+' stay. Tip: copy a backup first.</p>'+delBtn('everything','🗑 Delete everything')+'</div>';
+  if(/^https?:$/.test(location.protocol)&&!isStandalone)h+='<div class="card"><h2>Install as app</h2><p class="muted small" style="margin:0"><b>Android (Chrome):</b> tap <b>📲 Install app</b> at the top, or the ⋮ menu → <b>Add to Home screen / Install app</b>.<br><b>iPhone (Safari):</b> tap the Share button → <b>Add to Home Screen</b>.<br>The app then opens full-screen from its own icon and also works offline.</p></div>';
+  h+='<div class="card"><h2>How does auto-assign work?</h2><p class="muted" style="margin:0">Participants are sorted by power. The strongest players fill the first role (e.g. DPS or Lane Anchor), then the next role, and the role marked “Rest” gets everyone left over, so it fills itself no matter how many participants you have (only one role can be Rest at a time; without a Rest role, leftover players go to Reserve). Above the max. number of main players, the weakest go to Reserve. Within a role, each player goes to the group with the lowest total power, so groups stay balanced. Afterwards you can move anyone manually with the small menu next to their name.</p></div>';
+  return h;
+}
+root.addEventListener('change',function(ev){var t=ev.target;if(t.getAttribute('data-sf')==='alliance'){state.alliance=t.value.trim();touch()}});
+root.addEventListener('click',function(ev){
+  var b=ev.target.closest('[data-sact]');if(!b)return;var a=b.getAttribute('data-sact');
+  if(a==='export'){var t=JSON.stringify({alliance:state.alliance,members:state.members,events:state.events});if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('Backup copied')},function(){showText(t)});else showText(t)}
+  if(a==='import'){try{var d=JSON.parse(document.getElementById('imp').value);if(!Array.isArray(d.members))throw 0;state.alliance=d.alliance||'';state.members=d.members;state.events=d.events||[];toast('Backup restored');touch()}catch(x){toast('That doesn’t look like a valid backup')}}
+});
+
+var installEvt=null,isStandalone=false;try{isStandalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}catch(e){}
+if(/^https?:$/.test(location.protocol)&&'serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js').catch(function(){})}catch(e){}}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();installEvt=e;render()});
+window.addEventListener('appinstalled',function(){installEvt=null;toast('App installed');render()});
+root.addEventListener('click',function(ev){var b=ev.target.closest('[data-allow=install]');if(!b||!installEvt)return;installEvt.prompt();installEvt.userChoice.then(function(){installEvt=null;render()})});
+render();
+if(CLOUD)startCloud();
+})();
+</script></body></html>
