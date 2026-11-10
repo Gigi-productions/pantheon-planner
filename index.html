@@ -118,7 +118,7 @@ th{color:#b8a57a;letter-spacing:.08em}
 .group{background:var(--panel)}
 .groups{background:rgba(212,168,75,.14)}
 .r-0{border-top:3px solid #c4564a}.r-1{border-top:3px solid #4f8fc9}.r-2{border-top:3px solid #8aa860}.r-3{border-top:3px solid #9b78d0}.r-4{border-top:3px solid #d4a84b}
-.b-swordland{background:rgba(196,86,74,.18);color:#e8968c}.b-tri{background:rgba(79,143,201,.18);color:#9cc4ea}.b-custom{background:rgba(138,168,96,.18);color:#b8d197}
+.b-swordland{background:rgba(196,86,74,.18);color:#e8968c}.b-tri{background:rgba(79,143,201,.18);color:#9cc4ea}.b-cesares{background:rgba(232,140,52,.18);color:#f3b277}.b-custom{background:rgba(138,168,96,.18);color:#b8d197}
 .badge{font-family:Cinzel,Georgia,serif}
 .savebar{border-color:rgba(212,168,75,.35);background:#0a0d15f0}
 .hint{background:rgba(212,168,75,.06);border-color:rgba(212,168,75,.28)}
@@ -192,6 +192,10 @@ var PRESETS={
     {name:'Lane Support',count:12,groups:3,groupLabel:'Lane',link:true,rest:false,desc:'Back up the anchor of the same lane so they can rotate out to recover. Cover the lane while strong squads heal.'},
     {name:'Reaction Team',count:0,groups:2,groupLabel:'Reaction Team',link:false,rest:true,desc:'Take neutral or weakly defended buildings once the lanes are stable. Later: defend your own Garrison and the route buildings to the Temple.'}
   ]},
+  cesares:{label:'Cesares Fury',max:0,legion:'all',roles:[
+    {name:'Rally leader',count:4,groups:4,groupLabel:'Team',link:false,rest:false,desc:'Strongest players, one per team. Lead the rallies on the Cesares Captains (alliance bosses) and on tough Rebels when a team member uses a Cesares Accord to request help.'},
+    {name:'Rally joiner',count:0,groups:4,groupLabel:'Team',link:true,rest:true,desc:'Join your team leader’s rallies and answer Request Help calls. Everyone must deal damage to a Captain to qualify for its rewards — even a small march counts.'}
+  ]},
   custom:{label:'Other event',max:0,roles:[
     {name:'Front Line',count:5,groups:1,groupLabel:'Front Line',link:false,rest:false,desc:'Strongest players.'},
     {name:'Middle',count:10,groups:2,groupLabel:'Group',link:false,rest:false,desc:'Mid-power players.'},
@@ -253,6 +257,7 @@ function isEditing(){var a=document.activeElement;return !!(a&&root.contains(a)&
 function safeRender(){if(isEditing()){cloud.renderPending=true;return}render()}
 root.addEventListener('change',function(ev){var f=ev.target.getAttribute&&ev.target.getAttribute('data-sufield');if(f==='sel'){ui.suSel=ev.target.value;var k2=signupKeyFor(),ex=(cloud.signups||[]).filter(function(x){return x.id===k2})[0];ui.suNoteVal=ex&&ex.note||'';ui.suPowerVal=ex&&ex.power?fmt(ex.power):'';render()}else if(f==='typed'){ui.suTyped=ev.target.value}else if(f==='note'){ui.suNoteVal=ev.target.value}else if(f==='power'){ui.suPowerVal=ev.target.value}});
 root.addEventListener('input',function(ev){var f=ev.target.getAttribute&&ev.target.getAttribute('data-sufield');if(f==='typed')ui.suTyped=ev.target.value;else if(f==='note')ui.suNoteVal=ev.target.value;else if(f==='power')ui.suPowerVal=ev.target.value});
+root.addEventListener('change',function(ev){var t=ev.target;if(t.name==='type'&&t.closest&&t.closest('[data-form=newev]')){var lg=t.form.legion;if(lg)lg.value=PRESETS[t.value]&&PRESETS[t.value].legion||'1'}});
 root.addEventListener('focusout',function(){setTimeout(function(){if(cloud.renderPending&&!isEditing()){cloud.renderPending=false;render()}},0)});
 function cloudErr(e){cloud.status='error';cloud.err=(e&&(e.code||e.message))||String(e);safeRender()}
 function applyRemote(kind,arr){
@@ -556,6 +561,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.5',date:'2026-11-10',title:'Cesares Fury',items:['New event type: Cesares Fury. Plan rally teams for the Cesares Captains and Request Help calls: a strong rally leader per team plus joiners, balanced by power.','Events can now be for “All legions” (the whole alliance) instead of Legion 1 or 2.']},
  {v:'2.4',date:'2026-11-10',title:'What’s new page',items:['This page: see what changed in every update. After an update you get a short notice once.']},
  {v:'2.3',date:'2026-11-10',title:'Sign-up with power',items:['Sign-up is now its own tab in the menu.','When signing up you can optionally fill in your current power.','R4s see the power difference and update the roster with one click; numbers that look like a typo get ⚠ check and are skipped by “Apply all”.','New “Clear all legions” button on the Members page (R4 only).','The Excel sign-up sheet has been removed — signing up happens in the app.']},
  {v:'2.2',date:'2026-11-10',title:'Sign up in the app',items:['Members sign up for Legion 1, Legion 2 or Not joining — no account needed.','“Share on Discord” and “Copy link” for the in-game chat.','New “Out” status: members who don’t join are skipped when filling events.','Kingshot Oracle buttons: open your Oracle channel in Discord and “Paste & import” in one click.']},
@@ -585,7 +591,9 @@ function viewWhatsNew(){
   });
   return h+'</div>';
 }
-function fitsLegion(m,e){return m.legion!=='out'&&(!m.legion||String(m.legion)===String(e.legion))}
+function fitsLegion(m,e){if(e.legion==='all')return m.legion!=='out';return m.legion!=='out'&&(!m.legion||String(m.legion)===String(e.legion))}
+function legionLabel(e){return e.legion==='all'?'All legions':'Legion '+e.legion}
+function typeShort(t){return t==='tri'?'Tri-Alliance':t==='swordland'?'Swordland':t==='cesares'?'Cesares':'Event'}
 function delBtn(key,label){
   if(key==='all'&&ui.confirmDel===key)return '<span class="small" style="color:var(--red)">Delete all '+state.members.length+' members?</span> <button class="btn sm danger" data-act="del" data-key="all">Yes, delete all</button> <button class="btn sm ghost" data-act="nodel">No</button>';
   if(key==='lgall'&&ui.confirmDel===key){var nl=state.members.filter(function(m){return m.legion}).length;return '<span class="small" style="color:var(--gold2)">Clear the legion (L1 / L2 / Out) of '+nl+' member'+(nl===1?'':'s')+'?</span> <button class="btn sm gold" data-act="del" data-key="lgall">Yes, clear</button> <button class="btn sm ghost" data-act="nodel">No</button>'}
@@ -599,9 +607,9 @@ function fmtDate(d,t){if(!d)return 'No date';try{var x=new Date(d+'T00:00');retu
 function viewEvents(id){
   var evs=state.events.slice().sort(function(a,b){return (a.date||'9').localeCompare(b.date||'9')});
   var cur=id?ev(id):null;
-  var h='<div class="layout"><aside><div class="card eo"><h2>New event</h2><form data-form="newev" style="display:grid;gap:8px"><select name="type"><option value="swordland">Swordland Showdown</option><option value="tri">Tri-Alliance Clash</option><option value="custom">Other event</option></select><input type="text" name="name" placeholder="Name (optional)"><div class="row"><input type="date" name="date" class="grow"><input type="time" name="time" style="width:100px"></div><select name="legion"><option value="1">Legion 1</option><option value="2">Legion 2</option></select><button class="btn gold">Create event</button></form></div><div class="evlist">';
+  var h='<div class="layout"><aside><div class="card eo"><h2>New event</h2><form data-form="newev" style="display:grid;gap:8px"><select name="type"><option value="swordland">Swordland Showdown</option><option value="tri">Tri-Alliance Clash</option><option value="cesares">Cesares Fury</option><option value="custom">Other event</option></select><input type="text" name="name" placeholder="Name (optional)"><div class="row"><input type="date" name="date" class="grow"><input type="time" name="time" style="width:100px"></div><select name="legion"><option value="1">Legion 1</option><option value="2">Legion 2</option><option value="all">All legions</option></select><button class="btn gold">Create event</button></form></div><div class="evlist">';
   if(!evs.length)h+='<p class="muted small">No events planned yet.</p>';
-  evs.forEach(function(e){h+='<a href="#ev-'+e.id+'" class="'+(cur&&cur.id===e.id?'on':'')+'"><span class="badge b-'+e.type+'">'+(e.type==='tri'?'Tri-Alliance':e.type==='swordland'?'Swordland':'Event')+'</span> <b>'+esc(e.name)+'</b><div class="d">'+fmtDate(e.date,e.time)+' · Legion '+e.legion+' · '+e.participants.length+' players</div></a>'});
+  evs.forEach(function(e){h+='<a href="#ev-'+e.id+'" class="'+(cur&&cur.id===e.id?'on':'')+'"><span class="badge b-'+e.type+'">'+typeShort(e.type)+'</span> <b>'+esc(e.name)+'</b><div class="d">'+fmtDate(e.date,e.time)+' · '+legionLabel(e)+' · '+e.participants.length+' players</div></a>'});
   h+='</div></aside><section>';
   if(!cur){h+='<div class="empty">'+(evs.length?'Pick an event to see its line-up.':'Create an event first. Then pick participants and let the roles be assigned automatically.')+'</div>'}
   else h+=viewEvent(cur);
@@ -613,11 +621,11 @@ function viewEvent(e){
   var tot=0;parts.forEach(function(m){tot+=m.power});
   var avail=sortedMembers().filter(function(m){return e.participants.indexOf(m.id)<0});
   var h='<div class="card"><div class="row" style="margin-bottom:12px"><span class="badge b-'+e.type+'">'+PRESETS[e.type].label+'</span><input type="text" value="'+esc(e.name)+'" data-ef="name" class="grow" style="font-weight:700;font-size:16px"><span>'+delBtn('e:'+e.id,'Delete event')+'</span></div>';
-  h+='<div class="row"><label class="f">Date<input type="date" value="'+esc(e.date)+'" data-ef="date"></label><label class="f">Time<input type="time" value="'+esc(e.time)+'" data-ef="time"></label><label class="f">Legion<select data-ef="legion"><option value="1"'+(e.legion=='1'?' selected':'')+'>Legion 1</option><option value="2"'+(e.legion=='2'?' selected':'')+'>Legion 2</option></select></label><label class="f">Max. main players<input type="number" min="0" value="'+(+e.max||0)+'" data-ef="max" style="width:90px"></label><span class="muted small eo" style="align-self:flex-end;padding-bottom:8px">0 = no limit. Anyone beyond the limit goes to Reserve.</span></div></div>';
+  h+='<div class="row"><label class="f">Date<input type="date" value="'+esc(e.date)+'" data-ef="date"></label><label class="f">Time<input type="time" value="'+esc(e.time)+'" data-ef="time"></label><label class="f">Legion<select data-ef="legion"><option value="1"'+(e.legion=='1'?' selected':'')+'>Legion 1</option><option value="2"'+(e.legion=='2'?' selected':'')+'>Legion 2</option><option value="all"'+(e.legion=='all'?' selected':'')+'>All legions</option></select></label><label class="f">Max. main players<input type="number" min="0" value="'+(+e.max||0)+'" data-ef="max" style="width:90px"></label><span class="muted small eo" style="align-self:flex-end;padding-bottom:8px">0 = no limit. Anyone beyond the limit goes to Reserve.</span></div></div>';
 
   h+='<div class="card"><h2>Participants <span class="muted small" style="font-family:Inter">'+parts.length+' players · '+fmt(tot)+'</span></h2><div class="row eo" style="margin-bottom:10px"><select data-act-change="addpart" class="grow"><option value="">+ Add member…</option>';
   avail.sort(function(a,b){return (fitsLegion(b,e)?1:0)-(fitsLegion(a,e)?1:0)||b.power-a.power});avail.forEach(function(m){h+='<option value="'+m.id+'">'+esc(m.name)+' — '+fmt(m.power)+(m.tc?' · TC'+m.tc:'')+(m.legion==='out'?' · Out':m.legion?' · L'+m.legion:'')+(m.active===false?' (inactive)':'')+'</option>'});
-  h+='</select><button class="btn" data-act="addall">All active (Legion '+e.legion+')</button><span class="row" style="gap:4px"><button class="btn" data-act="addtop">Top</button><input type="number" id="topn" min="1" value="'+(+e.max||20)+'" style="width:64px"></span><button class="btn ghost danger" data-act="clearparts">Clear</button></div>';
+  h+='</select><button class="btn" data-act="addall">'+(e.legion==='all'?'All active members':'All active ('+legionLabel(e)+')')+'</button><span class="row" style="gap:4px"><button class="btn" data-act="addtop">Top</button><input type="number" id="topn" min="1" value="'+(+e.max||20)+'" style="width:64px"></span><button class="btn ghost danger" data-act="clearparts">Clear</button></div>';
   if(!state.members.length)h+='<div class="hint">First add members on the <a href="#leden" style="color:var(--gold2)">Members</a> tab.</div>';
   else if(!parts.length)h+='<p class="muted small">Pick players from the menu, or add all active members or the top X at once.</p>';
   h+='<div class="chips">';parts.forEach(function(m){h+='<span class="chip">'+esc(m.name)+(m.legion&&!fitsLegion(m,e)?'<span class="lgtag" title="'+(m.legion==='out'?'Marked as not joining':'Plays in another legion')+'">'+(m.legion==='out'?'Out':'L'+m.legion)+'</span>':'')+' <span class="p">'+fmt(m.power)+'</span><button class="eo" data-act="rmpart" data-id="'+m.id+'" title="Remove">×</button></span>'});h+='</div></div>';
@@ -685,8 +693,8 @@ function viewAssignment(e,parts){
 function briefing(e){
   var parts=e.participants.map(member).filter(Boolean);
   var G=groupsOf(e,parts);
-  var icon=e.type==='tri'?'🛡️':e.type==='swordland'?'⚔️':'📋';
-  var t=icon+' '+e.name+' — '+fmtDate(e.date,e.time)+' (Legion '+e.legion+')\n';
+  var icon=e.type==='tri'?'🛡️':e.type==='swordland'?'⚔️':e.type==='cesares'?'🔥':'📋';
+  var t=icon+' '+e.name+' — '+fmtDate(e.date,e.time)+' ('+(e.legion==='all'?'whole alliance':'Legion '+e.legion)+')\n';
   var L=member(e.lead),B=member(e.backup);
   if(L||B)t+='📣 Caller: '+(L?L.name:'—')+' | Backup: '+(B?B.name:'—')+'\n';
   e.roles.forEach(function(r){
