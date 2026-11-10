@@ -304,12 +304,45 @@ function startCloud(){
     var app=A.initializeApp(FIREBASE_CONFIG),db;
     try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true,localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true})}catch(e2){db=F.getFirestore(app)}}
     cloud.db=db;cloud.auth=U.getAuth(app);
-    U.onAuthStateChanged(cloud.auth,function(u){cloud.user=u||null;cloud.authKnown=true;safeRender()});
+    U.onAuthStateChanged(cloud.auth,function(u){cloud.user=u||null;if(!cloud.authKnown)countVisit();cloud.authKnown=true;safeRender()});
     F.onSnapshot(F.collection(db,'members'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('members',arr)},cloudErr);
     F.onSnapshot(F.collection(db,'events'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('events',arr)},cloudErr);
     F.onSnapshot(F.doc(db,'planner','settings'),function(d){applySettings(d.exists()?d.data():null)},cloudErr);
     F.onSnapshot(F.collection(db,'signups'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});cloud.signups=arr;safeRender()},function(){cloud.signups=[]});
   }).catch(function(e){cloud.status='offline';cloud.err=(e&&e.message)||String(e);render()});
+}
+function dayKey(d){d=d||new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function countVisit(){ /* members only (not a logged-in R4); a visit = once per browser tab per day; a visitor = once per browser */
+  try{if(cloud.user||!cloud.F||!cloud.F.increment)return;var today=dayKey();
+    try{if(sessionStorage.getItem('ks-visit')===today)return;sessionStorage.setItem('ks-visit',today)}catch(e){}
+    var F=cloud.F,newEver=!lsGet('ks-visitor'),newToday=lsGet('ks-visitor-day')!==today;
+    lsSet('ks-visitor','1');lsSet('ks-visitor-day',today);
+    F.setDoc(F.doc(cloud.db,'stats','total'),{visits:F.increment(1),visitors:F.increment(newEver?1:0)},{merge:true}).catch(function(){});
+    F.setDoc(F.doc(cloud.db,'stats','d-'+today),{visits:F.increment(1),visitors:F.increment(newToday?1:0)},{merge:true}).catch(function(){});
+  }catch(e){}
+}
+function loadStats(){
+  if(!CLOUD||!cloud.F||!cloud.user)return;var F=cloud.F,ids=['total'],now=new Date();ui.stats={loading:true};
+  for(var i=0;i<14;i++){var d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);ids.push('d-'+dayKey(d))}
+  Promise.all(ids.map(function(id){return F.getDoc(F.doc(cloud.db,'stats',id)).then(function(x){return x.exists()?x.data():null},function(e){return {err:e&&e.code||'error'}})})).then(function(r){
+    if(r.some(function(x){return x&&x.err})){ui.stats={err:r.filter(function(x){return x&&x.err})[0].err};return safeRender()}
+    ui.stats={total:r[0]||{visits:0,visitors:0},days:ids.slice(1).map(function(id,i){var v=r[i+1]||{};return {day:id.slice(2),visits:v.visits||0,visitors:v.visitors||0}})};safeRender()});
+}
+function statsHtml(){
+  if(!CLOUD)return '';var st=ui.stats;
+  if(!st&&cloud.user&&cloud.F)setTimeout(loadStats,0);
+  var h='<div class="card"><div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">👁 Visitors</h2><button class="btn sm ghost" data-act="statsreload">↻ Refresh</button></div>';
+  if(!st||st.loading)return h+'<p class="muted small" style="margin:0">Loading…</p></div>';
+  if(st.err)return h+'<p class="small" style="color:#f0a35b;margin:0">Can’t read the visitor count yet ('+esc(st.err)+'). Paste the new Firestore rules (with the <b>stats</b> part) in Firebase → Firestore → Rules and publish.</p></div>';
+  var d=st.days,sum=function(a,k){return a.reduce(function(t,x){return t+x[k]},0)},w=d.slice(0,7),mx=Math.max.apply(null,w.map(function(x){return x.visitors}).concat([1]));
+  h+='<div class="stats" style="margin-bottom:12px">'
+   +'<div class="stat"><b>'+d[0].visitors+'</b><span>Visitors today</span></div>'
+   +'<div class="stat"><b>'+sum(w,'visitors')+'</b><span>Visitors last 7 days</span></div>'
+   +'<div class="stat"><b>'+(st.total.visitors||0)+'</b><span>Visitors all time</span></div>'
+   +'<div class="stat"><b>'+(st.total.visits||0)+'</b><span>Visits all time</span></div></div>';
+  h+='<div style="display:grid;gap:4px;margin-bottom:8px">'+w.map(function(x,i){var dt=new Date(x.day+'T12:00:00');return '<div class="row" style="gap:8px;flex-wrap:nowrap"><span class="small muted" style="width:86px">'+(i===0?'Today':i===1?'Yesterday':dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}))+'</span><div class="bar grow" style="height:8px;margin:0"><i style="width:'+Math.round(x.visitors/mx*100)+'%"></i></div><span class="small" style="width:120px;text-align:right"><b>'+x.visitors+'</b> <span class="muted">visitor'+(x.visitors===1?'':'s')+' · '+x.visits+' visit'+(x.visits===1?'':'s')+'</span></span></div>'}).join('')+'</div>';
+  return h+'<p class="muted small" style="margin:0">A <b>visitor</b> is one phone or computer (counted once per day, and once ever for “all time”). A <b>visit</b> is each time someone opens the app (max once per day per open tab). Logged-in R4s aren’t counted. Counting started with v2.13.</p></div>';
 }
 var R4_DOMAIN='pantheon-planner.app'; /* usernames without @ become name@R4_DOMAIN */
 function r4Name(u){var e=(u&&u.email)||'';return e.slice(-(R4_DOMAIN.length+1))==='@'+R4_DOMAIN?e.slice(0,-(R4_DOMAIN.length+1)):e}
@@ -389,10 +422,10 @@ function render(){
   var ro=isLocked();
   var h='<div class="app'+(ro?' ro':'')+'">';
   h+='<header class="top"><svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc95"/><stop offset="1" stop-color="#b8862f"/></linearGradient></defs><g fill="url(#lg)"><ellipse cx="18.2" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-45 18.2 10.0)"/><ellipse cx="13.1" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-65 13.1 13.0)"/><ellipse cx="9.3" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-85 9.3 17.5)"/><ellipse cx="7.3" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-105 7.3 23.0)"/><ellipse cx="7.3" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-125 7.3 29.0)"/><ellipse cx="9.3" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-145 9.3 34.5)"/><ellipse cx="13.1" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-165 13.1 39.0)"/><ellipse cx="29.8" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-135 29.8 10.0)"/><ellipse cx="34.9" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-115 34.9 13.0)"/><ellipse cx="38.7" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-95 38.7 17.5)"/><ellipse cx="40.7" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-75 40.7 23.0)"/><ellipse cx="40.7" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-55 40.7 29.0)"/><ellipse cx="38.7" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-35 38.7 34.5)"/><ellipse cx="34.9" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-15 34.9 39.0)"/></g><path d="M26.5 9 L17 27 h6.5 L20 40 L31.5 20.5 H25 L28.5 9 Z" fill="url(#lg)" stroke="#0a0d14" stroke-width=".8"/></svg><div class="title"><h1>'+(state.alliance?esc(state.alliance):'Alliance Planner')+'</h1><small>Kingshot · members, power &amp; event groups · Made by Gigi</small></div>';
-  h+='<nav class="tabs"><a href="#leden" class="'+(r.tab==='leden'?'on':'')+'">Members</a><a href="#events" class="'+(r.tab==='events'?'on':'')+'">Events</a>'+(CLOUD?'<a href="#signup" class="'+(r.tab==='signup'||r.tab==='sheet'?'on':'')+'">Sign-up'+(cloud.user&&(cloud.signups||[]).length?' <span class="navbadge">'+(cloud.signups||[]).length+'</span>':'')+'</a>':'')+'<a href="#instellingen" class="'+(r.tab==='instellingen'?'on':'')+'">Settings</a>'+(CLOUD?(cloud.user?'<button class="btn sm" data-act="logout" title="Log out">🔓 '+esc(r4Name(cloud.user)||'R4')+' · Log out</button>':'<button class="btn sm gold" data-act="login">🔒 R4 login</button>'):state.lock?(ro?'<button class="btn sm gold" data-act="login">🔒 R4 login</button>':'<button class="btn sm" data-act="lockme" title="Lock editing again">🔓 R4 · Lock</button>'):'')+(installEvt&&!isStandalone?'<button class="btn sm" data-allow="install">📲 Install app</button>':'')+'</nav></header>';
+  h+='<nav class="tabs"><a href="#leden" class="'+(r.tab==='leden'?'on':'')+'">Members</a><a href="#events" class="'+(r.tab==='events'?'on':'')+'">Events</a>'+(CLOUD?'<a href="#signup" class="'+(r.tab==='signup'||r.tab==='sheet'?'on':'')+'">Sign-up'+(cloud.user&&(cloud.signups||[]).length?' <span class="navbadge">'+(cloud.signups||[]).length+'</span>':'')+'</a>':'')+(ro?'':'<a href="#instellingen" class="'+(r.tab==='instellingen'?'on':'')+'">Settings</a>')+(CLOUD?(cloud.user?'<button class="btn sm" data-act="logout" title="Log out">🔓 '+esc(r4Name(cloud.user)||'R4')+' · Log out</button>':'<button class="btn sm gold" data-act="login">🔒 R4 login</button>'):state.lock?(ro?'<button class="btn sm gold" data-act="login">🔒 R4 login</button>':'<button class="btn sm" data-act="lockme" title="Lock editing again">🔓 R4 · Lock</button>'):'')+(installEvt&&!isStandalone?'<button class="btn sm" data-allow="install">📲 Install app</button>':'')+'</nav></header>';
   h+=whatsNewBanner();
   if(r.tab==='events')h+=viewEvents(r.ev);
-  else if(r.tab==='instellingen')h+=viewSettings();
+  else if(r.tab==='instellingen')h+=ro?'<div class="card"><h2>🔒 Settings</h2><p class="muted" style="margin:0 0 12px">Settings are only for R4s.</p><button class="btn gold" data-act="login">🔒 R4 login</button></div>':viewSettings();
   else if(r.tab==='signup'||r.tab==='sheet')h+=viewSignup();
   else if(r.tab==='whatsnew')h+=viewWhatsNew();
   else h+=viewMembers();
@@ -600,6 +633,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.13',date:'2026-11-10',title:'Visitor count · Settings for R4s only',items:['Settings now shows how many people opened the app: visitors today, last 7 days and all time, with a small chart per day.','The Settings tab is now only visible for logged-in R4s.']},
  {v:'2.12',date:'2026-11-10',title:'Names easier to read',items:['Viking Vengeance no longer shows the “Top” button (everyone joins Vikings). On other events it’s now called “Add top”: it adds the N strongest active players.','The Name column in the member list is wider, bold gold and stays visible on the left while you scroll sideways — on phones and narrow windows too.','On small screens the Tier and Updated columns are hidden to make room.']},
  {v:'2.11',date:'2026-11-10',title:'Import sign-ups into legion events',items:['Swordland, Tri-Alliance and other legion events now also have “Import into this event”: it adds everyone who signed up for that legion — also sign-ups that haven’t been applied yet — and shows who chose the other legion, isn’t joining or hasn’t answered.']},
  {v:'2.10',date:'2026-11-10',title:'Event times on the sign-up page',items:['The sign-up page shows the date and time of the next event for Legion 1, Legion 2 and Viking Vengeance (also on the Legion buttons).','R4s can change the date and time right there; it updates the event on the Events tab too.']},
@@ -927,6 +961,7 @@ root.addEventListener('click',function(ev){
   if(act==='addtop'){var n=+(document.getElementById('topn')||{}).value||20;sortedMembers().filter(function(m){return m.active!==false&&fitsLegion(m,e)}).slice(0,n).forEach(function(m){if(e.participants.indexOf(m.id)<0)e.participants.push(m.id)});return touch()}
   if(act==='clearparts'){e.participants=[];e.assignment=null;return touch()}
   if(act==='rmpart'){var id=b.getAttribute('data-id');e.participants=e.participants.filter(function(p){return p!==id});if(e.assignment)delete e.assignment[id];return touch()}
+  if(act==='statsreload'){ui.stats=null;loadStats();return render()}
   if(act==='legimport'){var lids=state.members.filter(function(m){return m.active!==false&&legionOf(m)===e.legion}).sort(function(a,b){return b.power-a.power}).map(function(m){return m.id});
     var lrem=e.participants.filter(function(id){return lids.indexOf(id)<0});lrem.forEach(function(id){if(e.assignment)delete e.assignment[id];if(e.gar)delete e.gar[id]});
     var ladd=lids.filter(function(id){return e.participants.indexOf(id)<0}).length;e.participants=lids;
@@ -981,6 +1016,7 @@ root.addEventListener('change',function(ev){
 });
 
 function viewSettings(){
+  var st0=statsHtml();
   if(CLOUD){var h='<div class="card"><h2>R4 accounts</h2><p class="muted small">This planner is connected to an online database: everyone sees the same data, live. R4s log in with a username and password. To add an R4: Firebase console → <b>Authentication → Users → Add user</b>, with email <b>username@'+R4_DOMAIN+'</b> (not a real address — nothing is ever sent to it) and a password. They then log in here with just the username. To remove an R4, delete or disable their user there.</p>'+(cloud.user?'<p class="small" style="margin:0">Logged in as <b style="color:var(--gold2)">'+esc(r4Name(cloud.user))+'</b> · <button class="btn sm" data-act="logout">Log out</button></p>':'<button class="btn gold" data-act="login">🔒 R4 login</button>')+'</div>';}
   else{var h='<div class="card"><h2>R4 password</h2>';
   if(!state.lock)h+='<p class="muted small">Set a password so only R4s can change things. Everyone else who opens the file can still see members, events and line-ups, and copy briefings.</p><form class="row" data-form="setpw"><input type="password" name="pw1" placeholder="New password" style="width:200px"><input type="password" name="pw2" placeholder="Repeat password" style="width:200px"><button class="btn gold">Set password</button></form>';
@@ -998,7 +1034,7 @@ function viewSettings(){
   h+='<div class="card eo"><h2>Danger zone</h2><p class="muted small">Delete all members and all events'+(CLOUD?' — for everyone':'')+'. The alliance name'+(CLOUD?'':' and R4 password')+' stay. Tip: copy a backup first.</p>'+delBtn('everything','🗑 Delete everything')+'</div>';
   if(/^https?:$/.test(location.protocol)&&!isStandalone)h+='<div class="card"><h2>Install as app</h2><p class="muted small" style="margin:0"><b>Android (Chrome):</b> tap <b>📲 Install app</b> at the top, or the ⋮ menu → <b>Add to Home screen / Install app</b>.<br><b>iPhone (Safari):</b> tap the Share button → <b>Add to Home Screen</b>.<br>The app then opens full-screen from its own icon and also works offline.</p></div>';
   h+='<div class="card"><h2>How does auto-assign work?</h2><p class="muted" style="margin:0">Participants are sorted by power. The strongest players fill the first role (e.g. DPS or Lane Anchor), then the next role, and the role marked “Rest” gets everyone left over, so it fills itself no matter how many participants you have (only one role can be Rest at a time; without a Rest role, leftover players go to Reserve). Above the max. number of main players, the weakest go to Reserve. Within a role, each player goes to the group with the lowest total power, so groups stay balanced. Afterwards you can move anyone manually with the small menu next to their name.</p></div>';
-  return h;
+  return st0+h;
 }
 root.addEventListener('change',function(ev){var t=ev.target,k=t.getAttribute('data-sf');if(!k)return;var v=t.value.trim();if((k==='oracleUrl'||k==='shareUrl')&&v&&!/^(https:\/\/((ptb|canary)\.)?discord(app)?\.com\/|https:\/\/discord\.gg\/|discord:\/\/)/i.test(v))toast('That doesn’t look like a Discord link — saved anyway');state[k]=v;touch()});
 root.addEventListener('click',function(ev){
