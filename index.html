@@ -606,7 +606,7 @@ function viewSignup(){
   var ms=state.members.slice().sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:1});
   var list=cloud.signups||[],key=signupKeyFor(),mine=null;list.forEach(function(s){if(s.id===key)mine=s});
   var mm=ui.suSel&&ui.suSel!=='__new'?member(ui.suSel):null,evs=openEvents(),r4=!!cloud.user,dis=ui.suBusy||!cloud.ready?' disabled':'';
-  if(!evs.some(function(e){return e.id===ui.suEv}))ui.suEv=evs.length?evs[0].id:'';
+  if(!evs.some(function(e){return e.id===ui.suEv}))ui.suEv='';
   var E=ev_(ui.suEv);
   var myAns=function(e){if(mine&&mine.ev&&ANS[mine.ev[e.id]])return mine.ev[e.id];return mm?evAnswer(e,mm):''};
   var h=shareHelpHtml()+signupAdminHtml()+'<div data-allow style="max-width:640px;margin:0 auto">';
@@ -618,9 +618,9 @@ function viewSignup(){
   ms.forEach(function(m){h+='<option value="'+m.id+'"'+(ui.suSel===m.id?' selected':'')+'>'+esc(m.name)+'</option>'});
   h+='<option value="__new"'+(ui.suSel==='__new'?' selected':'')+'>➕ I’m not in the list</option></select></label>';
   if(ui.suSel==='__new')h+='<label class="f" style="margin-bottom:10px">Your in-game name<input type="text" data-sufield="typed" maxlength="40" value="'+esc(ui.suTyped||'')+'" style="width:100%;font-size:15px" placeholder="exactly as in the game"></label>';
-  h+='<label class="f" style="margin-bottom:10px"><span>2. Event <span class="su-req">required</span> <span class="muted" style="font-weight:400">— tap the box below and pick the event you want to answer'+(evs.length>1?' ('+evs.length+' events to choose from)':'')+'</span></span>';
+  h+='<label class="f" style="margin-bottom:10px"><span>2. Event <span class="su-req">required</span></span>';
   if(!evs.length)h+='<div class="su-when"><span class="muted">No events planned yet — the R4s will add them soon.</span>'+(r4?' · <a href="#events" style="color:var(--gold2)">plan one on the Events tab</a>':'')+'</div></label>';
-  else{h+='<select data-sufield="ev" style="width:100%;font-size:15px">';evs.forEach(function(e){var a=myAns(e);h+='<option value="'+e.id+'"'+(e.id===ui.suEv?' selected':'')+'>'+esc(evOptionLabel(e))+(a?'  ·  '+ANS[a].split(' ')[0]:'')+'</option>'});h+='</select></label>';}
+  else{h+='<select data-sufield="ev" style="width:100%;font-size:15px"><option value=""'+(ui.suEv?'':' selected')+'>👉 Tap here and choose an event'+(evs.length>1?' ('+evs.length+' to choose from)':'')+'</option>';evs.forEach(function(e){var a=myAns(e);h+='<option value="'+e.id+'"'+(e.id===ui.suEv?' selected':'')+'>'+esc(evOptionLabel(e))+(a?'  ·  '+ANS[a].split(' ')[0]:'')+'</option>'});h+='</select></label>';}
   if(E){var a=myAns(E);
     h+='<div class="su-event"><div class="su-event-h"><span class="su-ico">'+evIcon(E)+'</span><div class="grow"><b>'+esc(E.name)+'</b><div class="small muted">'+(E.type==='vikings'?'Whole alliance — will you be online during the event?':esc(evWho(E))+' — will you join?')+'</div></div></div>';
     h+='<div class="su-when">🕒 '+(r4?'<input type="date" data-sched="'+E.id+':date" value="'+esc(E.date||'')+'"><input type="time" data-sched="'+E.id+':time" value="'+esc(E.time||'')+'"> <span class="muted small">(R4: change it here)</span>':'<span class="su-time">'+esc(E.date?fmtDate(E.date,E.time):'date & time to be announced')+'</span>')+'</div>';
@@ -684,7 +684,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
- {v:'2.16',date:'2026-11-11',title:'Clearer event choice',items:['The sign-up page now says to pick the event from the dropdown, and how many events there are to choose from.']},
+ {v:'2.16',date:'2026-11-11',title:'Clearer event choice · Vikings without callers',items:['Viking Vengeance has no Caller / Backup caller any more. Auto-assign now also makes the garrison groups straight away.','The event dropdown on the sign-up page starts empty with “👉 Tap here and choose an event” — members pick the event themselves.']},
  {v:'2.15',date:'2026-11-11',title:'Sign up per event',items:['The sign-up page now has an event dropdown: pick an event and its answer buttons appear right under it.','Only events made on the Events tab can be chosen, and an event disappears from the sign-up page 1 hour after it starts.','Under the form, every open event shows how many people signed up and who. That section empties itself once the event has passed — the answers are not deleted.','R4s accept sign-ups with ✓ (or Accept all): the player goes straight into the event they answered, or is taken out when they can’t join. Changed answers come back to be accepted again.','The legion boxes next to the names in the member list are gone: who joins which event now comes from the Sign-up page.']},
  {v:'2.14',date:'2026-11-10',title:'Visitors counted every day',items:['The visitor count now counts someone again on every day they open the app, also in the all-time total.']},
  {v:'2.13',date:'2026-11-10',title:'Visitor count · Settings for R4s only',items:['Settings now shows how many people opened the app: visitors today, last 7 days and all time, with a small chart per day.','The Settings tab is now only visible for logged-in R4s.']},
@@ -841,7 +841,7 @@ function viewEvent(e){
 
   // callers + generate
   var opt=function(sel){var o='<option value="">—</option>';parts.forEach(function(m){o+='<option value="'+m.id+'"'+(sel===m.id?' selected':'')+'>'+esc(m.name)+'</option>'});return o};
-  h+='<div class="card"><div class="row"><label class="f">Caller<select data-ef="lead">'+opt(e.lead)+'</select></label><label class="f">Backup caller<select data-ef="backup">'+opt(e.backup)+'</select></label><span class="grow"></span><button class="btn gold eo" data-act="auto"'+(parts.length?'':' disabled style="opacity:.5"')+'>⚡ Auto-assign</button>'+(e.assignment?'<button class="btn" data-act="brief">Copy briefing</button>':'')+'</div></div>';
+  h+='<div class="card"><div class="row">'+(e.type==='vikings'?'<span class="small muted">No callers for Viking Vengeance — Auto-assign also makes the garrison groups.</span>':'<label class="f">Caller<select data-ef="lead">'+opt(e.lead)+'</select></label><label class="f">Backup caller<select data-ef="backup">'+opt(e.backup)+'</select></label>')+'<span class="grow"></span><button class="btn gold eo" data-act="auto"'+(parts.length?'':' disabled style="opacity:.5"')+'>⚡ Auto-assign</button>'+(e.assignment?'<button class="btn" data-act="brief">Copy briefing</button>':'')+'</div></div>';
 
   if(e.assignment)h+=viewAssignment(e,parts);
   h+=garrisonHtml(e,parts);
@@ -867,7 +867,7 @@ function moveSelect(e,m,cur){
   e.roles.forEach(function(r){for(var g=0;g<Math.max(1,+r.groups||1);g++){var v=r.id+':'+g;o+='<option value="'+v+'"'+(cur===v?' selected':'')+'>'+esc(r.name+((+r.groups||1)>1?' · '+(g+1):''))+'</option>'}});
   o+='<option value="reserve:0"'+(cur==='reserve:0'?' selected':'')+'>Reserve</option></select>';return o;
 }
-function memberRows(e,list,cur){var h='';list.sort(function(a,b){return b.power-a.power}).forEach(function(m){var star=(e.lead===m.id?' 📣':e.backup===m.id?' 🔁':'');h+='<div class="m">'+availMark(e,m)+'<span class="n">'+esc(m.name)+star+'</span>'+(m.tc?'<span class="lgtag" title="Town Center level">TC'+m.tc+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+moveSelect(e,m,cur)+'</div>'});return h||'<div class="muted small">Empty</div>'}
+function memberRows(e,list,cur){var h='';list.sort(function(a,b){return b.power-a.power}).forEach(function(m){var star=e.type==='vikings'?'':(e.lead===m.id?' 📣':e.backup===m.id?' 🔁':'');h+='<div class="m">'+availMark(e,m)+'<span class="n">'+esc(m.name)+star+'</span>'+(m.tc?'<span class="lgtag" title="Town Center level">TC'+m.tc+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+moveSelect(e,m,cur)+'</div>'});return h||'<div class="muted small">Empty</div>'}
 function sum(l){var s=0;l.forEach(function(m){s+=m.power});return s}
 
 function viewAssignment(e,parts){
@@ -903,7 +903,7 @@ function copyFor(e,key){
     var idx=k[0]==='grp'?[+k[2]]:R.groups.map(function(_,i){return i});
     idx.forEach(function(g){var list=(R.groups[g]||[]).slice().sort(function(a,b){return b.power-a.power});t+=((+r.groups||1)>1?gName(r,g)+': ':'')+(list.length?list.map(nm).join(', '):'—')+'\n'});
     if(r.desc)t+='\n'+r.desc+'\n';
-    var L=member(e.lead);if(L)t+='📣 Caller: '+L.name+'\n';
+    var L=e.type==='vikings'?null:member(e.lead);if(L)t+='📣 Caller: '+L.name+'\n';
     return t;
   }
   if(k[0]==='gar'){
@@ -921,7 +921,7 @@ function briefing(e){
   var G=groupsOf(e,parts);
   var icon=e.type==='tri'?'🛡️':e.type==='swordland'?'⚔️':e.type==='vikings'?'🪓':'📋';
   var t=icon+' '+e.name+' — '+fmtDate(e.date,e.time)+' ('+(e.legion==='all'?'whole alliance':'Legion '+e.legion)+')\n';
-  var L=member(e.lead),B=member(e.backup);
+  var L=e.type==='vikings'?null:member(e.lead),B=e.type==='vikings'?null:member(e.backup);
   if(L||B)t+='📣 Caller: '+(L?L.name:'—')+' | Backup: '+(B?B.name:'—')+'\n';
   e.roles.forEach(function(r){
     t+='\n【'+r.name.toUpperCase()+'】\n';
@@ -1026,7 +1026,7 @@ root.addEventListener('click',function(ev){
   if(act==='cesclear'){if(ui.confirmDel!=='cesclear'){ui.confirmDel='cesclear';return render()}ui.confirmDel=null;var nc=0;state.members.forEach(function(m){if(m.vikings){m.vikings='';nc++}});toast('Cleared '+nc+' Viking answer'+(nc===1?'':'s')+(cloud.signups&&cloud.signups.some(function(s){return s.vikings})?' (sign-ups waiting on the Sign-up tab are not touched)':''));return touch()}
   if(act==='garmake'){var gs=+(document.getElementById('garsize')||{}).value||3;var k=makeGarrison(e,gs);toast(k+' garrison group'+(k===1?'':'s')+' made');return touch()}
   if(act==='garclear'){e.gar=null;e.garN=0;toast('Garrison groups removed');return touch()}
-  if(act==='auto'){autoAssign(e);toast('Line-up created');return touch()}
+  if(act==='auto'){autoAssign(e);if(e.type==='vikings'){var gk=makeGarrison(e,e.garSize||3);toast('Line-up and '+gk+' garrison group'+(gk===1?'':'s')+' created');return touch()}toast('Line-up created');return touch()}
   if(act==='brief'){var t=briefing(e);if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){toast('Briefing copied — paste it in alliance chat')},function(){showText(t)})}else showText(t);return}
   if(act==='radd'){e.roles.push({id:uid(),name:'New role',count:5,groups:1,groupLabel:'Group',link:false,rest:false,desc:''});ui.openCfg=true;return touch()}
   if(act==='rdel'){e.roles.splice(+b.getAttribute('data-i'),1);ui.openCfg=true;return touch()}
