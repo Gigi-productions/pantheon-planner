@@ -319,7 +319,7 @@ function startCloud(){
     var app=A.initializeApp(FIREBASE_CONFIG),db;
     try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true,localCache:F.persistentLocalCache({tabManager:F.persistentMultipleTabManager()})})}catch(e){try{db=F.initializeFirestore(app,{ignoreUndefinedProperties:true})}catch(e2){db=F.getFirestore(app)}}
     cloud.db=db;cloud.auth=U.getAuth(app);
-    U.onAuthStateChanged(cloud.auth,function(u){cloud.user=u||null;if(!cloud.authKnown)countVisit();cloud.authKnown=true;safeRender()});
+    U.onAuthStateChanged(cloud.auth,function(u){if(!u||!cloud.user||u.uid!==cloud.user.uid){ui.mp=null;ui.mpErr=''}cloud.user=u||null;if(!cloud.authKnown)countVisit();cloud.authKnown=true;safeRender()});
     F.onSnapshot(F.collection(db,'members'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('members',arr)},cloudErr);
     F.onSnapshot(F.collection(db,'events'),function(snap){var arr=[];snap.forEach(function(d){var o=d.data();o.id=d.id;arr.push(o)});applyRemote('events',arr)},cloudErr);
     F.onSnapshot(F.doc(db,'planner','settings'),function(d){applySettings(d.exists()?d.data():null)},cloudErr);
@@ -491,7 +491,7 @@ function viewMembers(){
   var maxP=sorted.length?sorted[0].power:1;
   var nSu=CLOUD&&cloud.user?(cloud.signups||[]).filter(suNeedsAction).length:0;
   var h=banner+(nSu?'<div class="hint" style="margin-bottom:14px">📝 <b>'+nSu+' sign-up'+(nSu===1?'':'s')+' to accept'+'</b>'+((cloud.signups||[]).some(function(x){return x.power})?' (incl. power updates)':'')+' — <a href="#signup" style="color:var(--gold2)">accept them on the Sign-up tab to put them into the events</a>.</div>':'')+'<div class="stats"><div class="stat"><b>'+ms.length+'</b><span>Members</span></div><div class="stat"><b>'+act+'</b><span>Active</span></div><div class="stat"><b>'+fmt(total)+'</b><span>Total power</span></div><div class="stat"><b>'+fmt(ms.length?total/ms.length:0)+'</b><span>Average</span></div></div>';
-  h+='<div class="card eo"><h2>Add member</h2><form class="row" data-form="add"><input type="text" name="name" placeholder="Name" class="grow" required data-focus="addname"><input type="text" name="power" placeholder="Power, e.g. 45.2M" style="width:170px" required><button class="btn gold">Add</button></form><div class="row small" style="margin-top:10px;gap:8px"><span class="muted">Kingshot Oracle:</span><button class="btn sm" data-act="oracle" title="Opens your Oracle channel in Discord'+(state.oracleCmd?' and copies the command':'')+'">💬 Open in Discord</button><button class="btn sm" data-act="pasteimport" title="Copy the Oracle member list in Discord, then click: only the TC levels are updated (power stays the same)">📋 Update TC with Oracle</button><label class="btn sm" style="cursor:pointer" title="Pick one or more screenshots of the in-game alliance member list">📷 Import screenshots<input type="file" accept="image/*" multiple data-shotfile style="display:none"></label>'+(state.oracleUrl?'':'<a href="#instellingen" class="muted" style="color:var(--gold2)">Set the channel link in Settings</a>')+'</div>'+shotHtml();
+  h+='<div class="card eo"><h2>Add member</h2><form class="row" data-form="add"><input type="text" name="name" placeholder="Name" class="grow" required data-focus="addname"><input type="text" name="power" placeholder="Power, e.g. 45.2M" style="width:170px" required><button class="btn gold">Add</button></form><div class="row small" style="margin-top:10px;gap:8px"><span class="muted">Kingshot Oracle:</span><button class="btn sm" data-act="oracle" title="Opens your Oracle channel in Discord'+(state.oracleCmd?' and copies the command':'')+'">💬 Open in Discord</button><button class="btn sm" data-act="pasteimport" title="Copy the Oracle member list in Discord, then click: only the TC levels are updated (power stays the same)">📋 Update TC with Oracle</button><button class="btn sm" data-act="mpsync" title="Fetch power, TC level and names of your alliance from MightPulse">🔄 Sync from MightPulse</button><label class="btn sm" style="cursor:pointer" title="Pick one or more screenshots of the in-game alliance member list">📷 Import screenshots<input type="file" accept="image/*" multiple data-shotfile style="display:none"></label>'+(state.oracleUrl?'':'<a href="#instellingen" class="muted" style="color:var(--gold2)">Set the channel link in Settings</a>')+'</div>'+shotHtml();
   h+='<details style="margin-top:12px"'+(ui.bulkOpen?' open':'')+' data-bulk><summary class="muted" style="cursor:pointer">Paste many at once — add new members or update everyone’s power</summary><p class="muted small">One member per line: <code>Name, power</code> (tab, semicolon or space also work). Power can be 45.2M, 45.2 or 45200000. Names are matched without caring about capitals, so existing members just get their new power.<br><b>Kingshot Oracle lists work too:</b> paste the member list from Discord (all pages at once is fine); the name, power and TC level are used. Decorated names (ᵀᴴᴱ, 兮༒, 乇…) are matched to your existing members, and the import result shows which ones were matched by a similar name so you can check them.<br><b>Quick update:</b> click <i>Copy current list</i>, paste it in Notes/Discord, change the numbers, paste it back here and click Import.</p><textarea id="bulk" placeholder="DragonSlayer, 82.4M&#10;Luna; 61,7&#10;KnightBob 39500000"></textarea><div class="row" style="margin-top:8px"><button class="btn gold" data-act="bulk">Import</button><label class="row small muted" style="gap:6px"><input type="checkbox" id="bulkonly"'+(ui.bulkOnly?' checked':'')+'> Only update existing members (don’t add new names)</label><label class="row small muted" style="gap:6px"><input type="checkbox" id="bulktc"'+(ui.bulkTc?' checked':'')+'> Only update TC level (power stays the same, no new names)</label><span class="grow"></span><button class="btn" data-act="copylist">Copy current list</button></div>'+bulkReport()+'</details></div>';
   h+=dupHtml();
   h+='<div class="card"><div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">Member list</h2><span class="eo">'+(ms.length>1?'<button class="btn sm" data-act="dupcheck">🔍 Check doubles &amp; name changes</button> ':'')+(ms.length?delBtn('all','🗑 Delete all'):'')+'</span><input type="text" placeholder="Search…" value="'+esc(ui.search)+'" data-f="search" data-focus="search" style="width:180px"><select data-f="sort"><option value="power"'+(ui.sort==='power'?' selected':'')+'>By power</option><option value="name"'+(ui.sort==='name'?' selected':'')+'>By name</option><option value="tc"'+(ui.sort==='tc'?' selected':'')+'>By TC level</option></select></div>';
@@ -601,6 +601,36 @@ function matchShotRows(rows){
     r.warn=m&&m.power&&r.power&&(r.power/m.power<0.6||r.power/m.power>1.6)?'Power looks very different from '+fmt(m.power)+' — check the number':'';
     r.on=r.mid!=='skip'&&!r.warn;r.newName=r.name});
   return rows}
+/* ---------- MightPulse (api.mightpulse.com) ---------- */
+var MP_DEF={kid:'2342',tag:'THE',base:'https://api.mightpulse.com/v1',key:''};
+function mpCfg(){return ui.mp||MP_DEF}
+function loadMp(){
+  if(CLOUD){if(!cloud.user||!cloud.F)return;ui.mpLoading=true;cloud.F.getDoc(cloud.F.doc(cloud.db,'private','mightpulse')).then(function(x){var d=x.exists()?x.data():{};ui.mp={kid:d.kid||MP_DEF.kid,tag:d.tag||MP_DEF.tag,base:d.base||MP_DEF.base,key:d.key||''};ui.mpLoading=false;ui.mpErr='';safeRender()},function(e){ui.mpLoading=false;ui.mpErr=(e&&e.code)||'error';ui.mp=JSON.parse(JSON.stringify(MP_DEF));safeRender()})}
+  else{var d=lsGet('ks-mightpulse');try{d=d?JSON.parse(d):{}}catch(e){d={}}ui.mp={kid:d.kid||MP_DEF.kid,tag:d.tag||MP_DEF.tag,base:d.base||MP_DEF.base,key:d.key||''}}
+}
+function saveMp(c){ui.mp=c;if(CLOUD){if(!cloud.F||!cloud.user){toast('Log in as R4 first');return}cloud.F.setDoc(cloud.F.doc(cloud.db,'private','mightpulse'),c).then(function(){toast('✅ MightPulse settings saved');safeRender()},function(e){toast('Could not save ('+((e&&e.code)||'error')+')'+(e&&e.code==='permission-denied'?' — paste the new Firestore rules first':''))})}else{lsSet('ks-mightpulse',JSON.stringify(c));toast('✅ MightPulse settings saved on this device')}}
+function findRoster(o,depth){if(!o||typeof o!=='object'||depth>5)return null;if(Array.isArray(o)){if(o.length&&o[0]&&typeof o[0]==='object'&&('nick_name' in o[0]||'governor_id' in o[0])&&'power' in o[0])return o;for(var i=0;i<o.length;i++){var r=findRoster(o[i],depth+1);if(r)return r}return null}
+  var keys=['roster','members','members_base','data','alliance','items'];for(var k=0;k<keys.length;k++)if(o[keys[k]]){var r2=findRoster(o[keys[k]],depth+1);if(r2)return r2}for(var kk in o){var r3=findRoster(o[kk],depth+1);if(r3)return r3}return null}
+function mpTc(v){if(v==null||v==='')return null;var g=String(v).match(/tg\s*(\d+)/i);if(g)return 30+(+g[1]);var n=parseInt(v,10);return n>0&&n<=40?n:null}
+function mpSync(){
+  var c=mpCfg();if(!c.key){toast('Add your MightPulse API key in Settings first');go('instellingen');return}
+  var url=String(c.base||MP_DEF.base).replace(/\/+$/,'')+'/alliances/'+encodeURIComponent(c.kid)+'/'+encodeURIComponent(c.tag)+'?include=roster';
+  ui.shot={busy:true,msg:'Fetching '+c.tag+' (kingdom '+c.kid+') from MightPulse…',rows:[]};render();
+  var attempt=function(n){return fetch(url,{headers:{'Authorization':'Bearer '+c.key,'Accept':'application/json'}}).then(function(res){
+      if(res.status===202&&n<3){var ra=Math.min(30,+res.headers.get('Retry-After')||5);ui.shot.msg='MightPulse is refreshing the data — trying again in '+ra+'s…';render();return new Promise(function(r){setTimeout(r,ra*1000)}).then(function(){return attempt(n+1)})}
+      if(!res.ok){var m=res.status===401?'API key not accepted — check it in Settings':res.status===404?'Alliance '+c.tag+' not found in kingdom '+c.kid+' (the tag is case-sensitive)':res.status===429?'Too many requests — wait a minute and try again':res.status===403?'This needs a Mighty (paid) key':'MightPulse error '+res.status;throw new Error(m)}
+      return res.json()})};
+  attempt(0).then(function(data){var R=findRoster(data,0)||[];
+    var rows=R.map(function(x){return {name:String(x.nick_name||x.name||'').trim(),power:+x.power||0,tc:mpTc(x.town_center_level!=null?x.town_center_level:x.tc),gid:String(x.governor_id||x.fid||x.uid||''),rank:x.alliance_rank_label||''}}).filter(function(r){return r.name||r.gid});
+    if(!rows.length){ui.shot=null;toast('MightPulse returned no members for '+c.tag);return render()}
+    rows.forEach(function(r){var m=r.gid&&state.members.filter(function(x){return x.gid===r.gid})[0];if(m){r.mid=m.id;r.sure=true}});
+    var todo=rows.filter(function(r){return !r.mid});matchShotRows(todo);
+    rows.forEach(function(r){var m=member(r.mid);if(r.gid&&m&&m.gid===r.gid){r.warn='';r.on=true;r.newName=r.name}else if(m&&!r.sure){r.on=false;r.warn=r.warn||'Guessed from the power only — pick the right member or “Add as new”'}if(m&&m.name!==r.name)r.rename=true});
+    var hit={};rows.forEach(function(r){if(r.mid&&r.mid!=='new'&&r.mid!=='skip')hit[r.mid]=1});
+    var left=state.members.filter(function(m){return m.active!==false&&!hit[m.id]}).map(function(m){return m.id});
+    ui.shot={busy:false,src:'mp',rows:rows.sort(function(a,b){return b.power-a.power}),left:left};render()})
+  .catch(function(e){ui.shot=null;var msg=(e&&e.message)||'error';if(/fetch|network|load failed/i.test(msg))msg='Your browser could not reach MightPulse (it may block apps calling it directly). See Settings → MightPulse for the relay option.';toast(msg);render()});
+}
 function processShots(files){
   files=[].slice.call(files||[]).filter(function(f){return /^image\//.test(f.type)});if(!files.length)return;
   ui.shot={busy:true,msg:'Loading the text reader…',rows:[]};render();var worker,all=[];
@@ -617,13 +647,16 @@ function shotHtml(){var S=ui.shot;if(!S)return '';
   if(!S.rows.length)return '';
   var opts=function(r){var ms=state.members.slice().sort(function(a,b){return Math.abs(a.power-r.power)-Math.abs(b.power-r.power)});
     return '<option value="skip"'+(r.mid==='skip'?' selected':'')+'>— skip —</option><option value="new"'+(r.mid==='new'?' selected':'')+'>➕ Add as new member</option><optgroup label="Members (closest power first)">'+ms.map(function(m){return '<option value="'+m.id+'"'+(r.mid===m.id?' selected':'')+'>'+esc(m.name)+' · '+fmt(m.power)+'</option>'}).join('')+'</optgroup>'};
-  var h='<div class="hint" style="margin-top:12px"><div class="row" style="margin-bottom:6px"><b class="grow">📷 Found '+S.rows.length+' player'+(S.rows.length===1?'':'s')+' — check and apply</b><button class="btn sm ghost" data-act="shotcancel">Cancel</button><button class="btn gold sm" data-act="shotapply">✓ Apply ticked rows</button></div>'
-   +'<p class="small muted" style="margin:0 0 8px">The reader isn’t perfect with fancy names: check the <b>Member</b> column (rows marked ? are a guess) and fix any power it misread. Rows with ⚠ are not ticked yet.</p>'
+  var h='<div class="hint" style="margin-top:12px"><div class="row" style="margin-bottom:6px"><b class="grow">'+(S.src==='mp'?'🔄 MightPulse: '+S.rows.length+' members of '+esc(mpCfg().tag):'📷 Found '+S.rows.length+' player'+(S.rows.length===1?'':'s'))+' — check and apply</b><button class="btn sm ghost" data-act="shotcancel">Cancel</button><button class="btn gold sm" data-act="shotapply">✓ Apply ticked rows</button></div>'
+   +(S.src==='mp'?'<p class="small muted" style="margin:0 0 8px">Members are linked by their in-game ID after the first sync, so name changes are picked up automatically (✏️ = new name). Check rows marked <b>?</b>; rows with ⚠ are not ticked yet.</p>':'<p class="small muted" style="margin:0 0 8px">The reader isn’t perfect with fancy names: check the <b>Member</b> column (rows marked ? are a guess) and fix any power it misread. Rows with ⚠ are not ticked yet.</p>')
    +'<div style="overflow-x:auto"><table><thead><tr><th></th><th>Read</th><th>Member</th><th>Power</th><th>TC</th><th></th></tr></thead><tbody>';
   S.rows.forEach(function(r,i){var m=member(r.mid);
-    h+='<tr><td><input type="checkbox" data-shot-f="on" data-i="'+i+'"'+(r.on?' checked':'')+'></td><td class="small">'+(r.name?esc(r.name):'<span class="muted">(no name read)</span>')+'</td><td><select data-shot-f="mid" data-i="'+i+'" style="max-width:220px">'+opts(r)+'</select>'+(r.mid==='new'?'<br><input type="text" data-shot-f="newName" data-i="'+i+'" value="'+esc(r.newName||'')+'" placeholder="Name" style="margin-top:4px;width:200px">':'')+(m&&!r.sure?' <span class="small" style="color:#f0a35b" title="Guessed from a similar name or the power">?</span>':'')+'</td>'
+    h+='<tr><td><input type="checkbox" data-shot-f="on" data-i="'+i+'"'+(r.on?' checked':'')+'></td><td class="small">'+(r.name?esc(r.name):'<span class="muted">(no name read)</span>')+(r.rename?' <span title="New name — the member list will be renamed">✏️</span>':'')+(r.rank?' <span class="muted">'+esc(r.rank)+'</span>':'')+'</td><td><select data-shot-f="mid" data-i="'+i+'" style="max-width:220px">'+opts(r)+'</select>'+(r.mid==='new'?'<br><input type="text" data-shot-f="newName" data-i="'+i+'" value="'+esc(r.newName||'')+'" placeholder="Name" style="margin-top:4px;width:200px">':'')+(m&&!r.sure?' <span class="small" style="color:#f0a35b" title="Guessed from a similar name or the power">?</span>':'')+'</td>'
      +'<td style="white-space:nowrap"><input type="text" data-shot-f="power" data-i="'+i+'" value="'+fmt(r.power)+'" style="width:84px;text-align:right">'+(m?' <span class="small muted">was '+fmt(m.power)+'</span>':'')+(r.fixed?' <span class="small" style="color:#f0a35b" title="The decimal point was probably missed — corrected">· fixed</span>':'')+'</td><td><input type="text" data-shot-f="tc" data-i="'+i+'" value="'+(r.tc?tcIn(r.tc):'')+'" placeholder="–" style="width:54px;text-align:center"></td><td class="small" style="color:#f0a35b">'+(r.warn?'⚠ '+esc(r.warn):'')+'</td></tr>'});
-  return h+'</tbody></table></div></div>'}
+  h+='</tbody></table></div>';
+  var L=(S.left||[]).map(member).filter(Boolean);
+  if(L.length)h+='<div class="small" style="margin-top:10px"><b>Not in '+esc(mpCfg().tag)+' on MightPulse ('+L.length+'):</b> '+L.map(function(m){return esc(m.name)}).join(', ')+' <label class="row" style="display:inline-flex;gap:6px;margin-left:8px"><input type="checkbox" data-shot-left'+(S.markLeft?' checked':'')+'> mark them inactive when applying</label></div>';
+  return h+'</div>'}
 function tcLbl(tc){return tc>30?'TG'+(tc-30):'TC'+tc}
 function tcOptions(cur,blank){var h='<option value=""'+(cur?'':' selected')+'>'+(blank||'–')+'</option>';
   for(var g=10;g>=1;g--)h+='<option value="TG'+g+'"'+(cur===30+g?' selected':'')+'>TG'+g+'</option>';
@@ -875,6 +908,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.24',date:'2026-11-11',title:'Sync from MightPulse',items:['New on the Members tab: 🔄 Sync from MightPulse. It fetches the names, power and TC levels of [THE] in kingdom 2342 and shows them in a check-and-apply list.','After the first sync members are linked by their in-game ID, so name changes are picked up automatically. Members who are no longer in the alliance are listed and can be set inactive.','Set it up in Settings → MightPulse with your free API key (only R4s can read it).']},
  {v:'2.23',date:'2026-11-11',title:'Add members to an event from the member list',items:['R4s can tick several members on the Members tab and add them to an event in one go.','TC levels are picked from a dropdown on the Members tab and the sign-up page.']},
  {v:'2.22',date:'2026-11-11',title:'Check for doubles & name changes',items:['New R4 button on the Members tab: 🔍 Check doubles & name changes. It finds members that are in the list twice (same or very similar name) and possible name changes (a new name with the same power as an old one that stopped being updated).','Keep merges the two: you choose the name, the newest power, highest TC level, event spots and sign-ups are kept. Not the same hides the pair.']},
  {v:'2.21',date:'2026-11-11',title:'TC level on the sign-up page',items:['Members can pick their Town Center level (or TG level) on the sign-up page; it is saved straight into the member list.','TC levels are picked from a dropdown (TG10…TG1, 30…1) on the Members tab and the sign-up page.','The sign-up page shows the power and TC level we have for you, so you only update what changed.']},
@@ -1188,6 +1222,9 @@ root.addEventListener('click',function(ev){
     if(k.indexOf('e:')===0){var id2=k.slice(2);state.events=state.events.filter(function(x){return x.id!==id2});persist();return go('events')}
     return touch();
   }
+  if(act==='mpsync'){if(!ui.mp)loadMp();var wait=function(n){if(ui.mp||n>20)return mpSync();setTimeout(function(){wait(n+1)},150)};wait(0);return}
+  if(act==='mpsave'){var fm=function(id){return ((root.querySelector('#'+id)||{}).value||'').trim()};var c={kid:fm('mpkid')||MP_DEF.kid,tag:fm('mptag')||MP_DEF.tag,base:fm('mpbase')||MP_DEF.base,key:fm('mpkey')||(ui.mp&&ui.mp.key)||''};saveMp(c);return render()}
+  if(act==='mptest'){mpSync();go('leden');return}
   if(act==='selclear'){ui.msel={};return render()}
   if(act==='seladd'){var se=root.querySelector('#selev'),E2=se&&ev_(se.value);if(!E2)return;ui.selEv=E2.id;var ids=Object.keys(ui.msel||{}).filter(member),added=0;
     ids.forEach(function(id){if(E2.participants.indexOf(id)<0){E2.participants.push(id);added++}});
@@ -1197,11 +1234,12 @@ root.addEventListener('click',function(ev){
   if(act==='dupkeep'){var K=member(b.getAttribute('data-k')),D=member(b.getAttribute('data-d'));if(!K||!D)return;mergeMembers(K,D);toast('Merged into “'+K.name+'”');return touch()}
   if(act==='dupno'){var A1=member(b.getAttribute('data-k')),B1=member(b.getAttribute('data-d'));if(!A1||!B1)return;A1.notDup=(A1.notDup||[]).concat([B1.id]);toast('OK — this pair won’t be shown again');return touch()}
   if(act==='shotcancel'){ui.shot=null;return render()}
-  if(act==='shotapply'){var S=ui.shot;if(!S)return;var up=0,add=0,tcn=0,usedId={};
+  if(act==='shotapply'){var S=ui.shot;if(!S)return;var up=0,add=0,tcn=0,ren=0,inact=0,usedId={};
     S.rows.forEach(function(r){if(!r.on||r.mid==='skip')return;
-      if(r.mid==='new'){var nn=String(r.newName||r.name||'').trim();if(!nn)return;var f=findMember(nn,[]);if(f&&!f.fuzzy){r.mid=f.m.id}else{var nm={id:uid(),name:nn,power:r.power,active:true,updated:Date.now(),alias:nameKey(nn)};if(r.tc)nm.tc=r.tc;state.members.push(nm);add++;return}}
-      var m=member(r.mid);if(!m||usedId[m.id])return;usedId[m.id]=1;if(r.power>0&&m.power!==r.power){setPower(m,r.power);up++}else if(!m.updated)m.updated=Date.now();if(r.tc&&m.tc!==r.tc){m.tc=r.tc;tcn++}});
-    ui.shot=null;toast(up+' power updated · '+add+' added'+(tcn?' · '+tcn+' TC level'+(tcn===1?'':'s'):''));return touch()}
+      if(r.mid==='new'){var nn=String(r.newName||r.name||'').trim();if(!nn)return;var f=findMember(nn,[]);if(f&&!f.fuzzy){r.mid=f.m.id}else{var nm={id:uid(),name:nn,power:r.power,active:true,updated:Date.now(),alias:nameKey(nn)};if(r.tc)nm.tc=r.tc;if(r.gid)nm.gid=r.gid;state.members.push(nm);add++;return}}
+      var m=member(r.mid);if(!m||usedId[m.id])return;usedId[m.id]=1;if(r.gid)m.gid=r.gid;if(S.src==='mp'&&r.name&&m.name!==r.name){if(!m.alias||m.alias===nameKey(m.name))m.alias=nameKey(m.name);m.name=r.name;ren++}if(r.power>0&&m.power!==r.power){setPower(m,r.power);up++}else if(!m.updated)m.updated=Date.now();if(r.tc&&m.tc!==r.tc){m.tc=r.tc;tcn++}});
+    if(S.markLeft)(S.left||[]).forEach(function(id){var m=member(id);if(m&&m.active!==false&&!usedId[id]){m.active=false;inact++}});
+    ui.shot=null;toast(up+' power updated · '+add+' added'+(tcn?' · '+tcn+' TC level'+(tcn===1?'':'s'):'')+(ren?' · '+ren+' renamed':'')+(inact?' · '+inact+' set inactive':''));return touch()}
   if(act==='bulk'){
     var txt=(document.getElementById('bulk')||{}).value||'';var only=(document.getElementById('bulkonly')||{}).checked;ui.bulkOnly=only;var tcOnly=(document.getElementById('bulktc')||{}).checked;ui.bulkTc=tcOnly;
     var R={upd:[],add:[],skip:[],same:0,seen:[],fz:[],tc:[]};
@@ -1266,6 +1304,7 @@ function ev_(id){return ev(id)}
 function showText(t){var w=document.createElement('div');w.className='toast';w.style.cssText+='left:16px;max-width:520px;margin-left:auto';w.innerHTML='<div class="row" style="margin-bottom:6px"><b class="grow">Copy manually</b><button class="btn sm">Close</button></div><textarea style="min-height:220px">'+esc(t)+'</textarea>';document.body.appendChild(w);w.querySelector('button').onclick=function(){w.remove()};var ta=w.querySelector('textarea');ta.focus();ta.select()}
 
 root.addEventListener('change',function(ev){var t=ev.target;if(!t.hasAttribute)return;
+  if(t.hasAttribute('data-shot-left')){if(ui.shot)ui.shot.markLeft=t.checked;return}
   if(t.hasAttribute('data-shotfile')){if(isLocked())return;processShots(t.files);t.value='';return}
   var f=t.getAttribute('data-shot-f');if(!f||!ui.shot)return;var r=ui.shot.rows[+t.getAttribute('data-i')];if(!r)return;
   if(f==='on')r.on=t.checked;else if(f==='mid'){r.mid=t.value;r.on=t.value!=='skip';var m=member(r.mid);r.sure=true;r.warn=m&&m.power&&r.power&&(r.power/m.power<0.6||r.power/m.power>1.6)?'Power looks very different from '+fmt(m.power)+' — check the number':'';render()}
@@ -1314,8 +1353,18 @@ root.addEventListener('change',function(ev){
   if(mv&&e.assignment){var p=t.value.split(':');e.assignment[mv]={role:p[0],group:+p[1]||0};return touch()}
 });
 
+function mpSettingsHtml(){
+  if(isLocked())return '';if(!ui.mp&&!ui.mpLoading)setTimeout(loadMp,0);var c=ui.mp||MP_DEF;
+  var h='<div class="card"><h2>🔄 MightPulse</h2><p class="muted small" style="margin:0 0 10px">Fetch your alliance’s names, power and TC levels from <a href="https://mightpulse.com" target="_blank" rel="noopener" style="color:var(--gold2)">MightPulse</a> with the <b>🔄 Sync from MightPulse</b> button on the Members tab. Get a free API key at <a href="https://api.mightpulse.com" target="_blank" rel="noopener" style="color:var(--gold2)">api.mightpulse.com</a> (sign in with Discord → create a key → copy it here). '+(CLOUD?'The key is stored so that <b>only logged-in R4s</b> can read it.':'The key is stored on this device only.')+'</p>';
+  if(ui.mpLoading)return h+'<p class="muted small">Loading…</p></div>';
+  if(ui.mpErr)h+='<p class="small" style="color:#f0a35b">Can’t read the saved settings ('+esc(ui.mpErr)+') — paste the new Firestore rules (with the <b>private</b> part) and publish.</p>';
+  h+='<div class="row" style="gap:10px;align-items:flex-end"><label class="f">Kingdom<input type="text" id="mpkid" value="'+esc(c.kid)+'" style="width:90px"></label><label class="f">Alliance tag <span class="muted small">(exact capitals)</span><input type="text" id="mptag" value="'+esc(c.tag)+'" style="width:110px"></label>'
+   +'<label class="f grow">API key '+(c.key?'<span class="small" style="color:var(--green)">✓ saved</span>':'')+'<input type="password" id="mpkey" value="" placeholder="'+(c.key?'•••••••• (leave empty to keep it)':'kss_…')+'" autocomplete="off" style="width:100%"></label></div>'
+   +'<details class="small" style="margin-top:8px"><summary class="muted">Advanced: API address</summary><p class="muted" style="margin:6px 0">Only change this if your browser can’t reach MightPulse directly and you set up a relay.</p><input type="text" id="mpbase" value="'+esc(c.base)+'" style="width:100%"></details>'
+   +'<div class="row" style="margin-top:10px;gap:8px"><button class="btn gold" data-act="mpsave">Save</button>'+(c.key?'<button class="btn" data-act="mptest">🔄 Sync now</button>':'')+'</div></div>';
+  return h}
 function viewSettings(){
-  var st0=statsHtml();
+  var st0=statsHtml()+mpSettingsHtml();
   if(CLOUD){var h='<div class="card"><h2>R4 accounts</h2><p class="muted small">This planner is connected to an online database: everyone sees the same data, live. R4s log in with a username and password. To add an R4: Firebase console → <b>Authentication → Users → Add user</b>, with email <b>username@'+R4_DOMAIN+'</b> (not a real address — nothing is ever sent to it) and a password. They then log in here with just the username. To remove an R4, delete or disable their user there.</p>'+(cloud.user?'<p class="small" style="margin:0">Logged in as <b style="color:var(--gold2)">'+esc(r4Name(cloud.user))+'</b> · <button class="btn sm" data-act="logout">Log out</button></p>':'<button class="btn gold" data-act="login">🔒 R4 login</button>')+'</div>';}
   else{var h='<div class="card"><h2>R4 password</h2>';
   if(!state.lock)h+='<p class="muted small">Set a password so only R4s can change things. Everyone else who opens the file can still see members, events and line-ups, and copy briefings.</p><form class="row" data-form="setpw"><input type="password" name="pw1" placeholder="New password" style="width:200px"><input type="password" name="pw2" placeholder="Repeat password" style="width:200px"><button class="btn gold">Set password</button></form>';
