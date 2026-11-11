@@ -545,16 +545,41 @@ function parseShot(words){
     var tc=null,below=W.filter(function(w){return inCol(w)&&w.y0>=p.y1-0.2*h&&w.y0<=p.y1+2.4*h}).sort(function(a,b){return a.x0-b.x0});
     below.forEach(function(w,i){if(tc!=null)return;if(/^lv\.?$/i.test(w.t)&&below[i+1]&&/^\d{1,2}$/.test(below[i+1].t))tc=+below[i+1].t;else{var lm=w.t.match(/^lv\.?(\d{1,2})$/i);if(lm)tc=+lm[1]}});
     if(tc==null)below.forEach(function(w){if(tc==null&&/^[1-9]$/.test(w.t)&&w.c>=60&&w.x0>p.x0)tc=30+(+w.t)});
-    rows.push({name:name,power:power,tc:tc,y:p.y0,x:p.x0});
+    rows.push({name:name,power:power,nd:m[1].replace(/[^\d]/g,"").length,tc:tc,y:p.y0,x:p.x0,h:h});
   });
   return rows.sort(function(a,b){return Math.abs(a.y-b.y)>40?a.y-b.y:a.x-b.x});
 }
-
+function parseRank(words){
+  var W=words.map(function(w){return {t:String(w.text||'').trim(),x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1,c:+w.confidence||0}}).filter(function(w){return w.t});
+  var isG=function(w){return /^[\d.,'’ ]+$/.test(w.t)&&/\d/.test(w.t)};
+  W.sort(function(a,b){return a.x0-b.x0});
+  /* glue digit groups that stand next to each other on one line: "54 604 999" → 154604999 is not possible, so only glue when all groups are complete */
+  var used={},nums=[];
+  W.forEach(function(w,i){if(used[i]||!isG(w))return;var h=w.y1-w.y0,cy=(w.y0+w.y1)/2,parts=[w],last=w;
+    for(var j=0;j<W.length;j++){var v=W[j];if(used[j]||v===w||!isG(v))continue}
+    var more=true;while(more){more=false;for(var k=0;k<W.length;k++){var v2=W[k];if(used[k]||parts.indexOf(v2)>=0||!isG(v2))continue;var cy2=(v2.y0+v2.y1)/2;if(Math.abs(cy2-cy)<0.6*h&&v2.x0>last.x0&&v2.x0-last.x1<1.4*h){parts.push(v2);last=v2;used[k]=1;more=true;break}}}
+    used[i]=1;var digits=parts.map(function(p){return p.t.replace(/[^\d]/g,'')}).join('');
+    if(digits.length>=7&&digits.length<=12){nums.push({v:+digits,x0:parts[0].x0,x1:last.x1,y0:Math.min.apply(null,parts.map(function(p){return p.y0})),y1:Math.max.apply(null,parts.map(function(p){return p.y1})),parts:parts})}});
+  var rows=[];
+  nums.forEach(function(n){var h=n.y1-n.y0,cy=(n.y0+n.y1)/2;
+    var nameW=W.filter(function(w){var c=(w.y0+w.y1)/2;return n.parts.indexOf(w)<0&&Math.abs(c-cy)<0.8*h&&w.x1<=n.x0+2&&w.x0>n.x0-22*h}).sort(function(a,b){return a.x0-b.x0});
+    var name=nameW.map(function(w){return {t:w.t.replace(/[^\p{L}\p{N}_]/gu,''),c:w.c}}).filter(function(o){var t=o.t;
+      if(t.length<2)return false;if(/^\d+$/.test(t))return false;if(/^R\d$/i.test(t))return false;if(t.length<=2&&o.c<75)return false;if(o.c<20&&t.length<4)return false;if(/^(the|thie|th)$/i.test(t))return false;return true}).map(function(o){return o.t}).join(' ');
+    rows.push({name:name,power:n.v,exact:true,nd:String(n.v).length,tc:null,y:n.y0,x:n.x0,h:h})});
+  return rows.sort(function(a,b){return a.y-b.y});
+}
+function mergeRows(list){
+  var groups=[];
+  list.forEach(function(r){var g=null;groups.forEach(function(G){var a=G[0];if(!g&&Math.abs(a.y-r.y)<0.8*Math.max(a.h,r.h)&&Math.abs(a.x-r.x)<5*Math.max(a.h,r.h))g=G});if(g)g.push(r);else groups.push([r])});
+  return groups.map(function(G){var best=G.slice().sort(function(a,b){return (b.nd||0)-(a.nd||0)})[0],nm=G.map(function(r){return r.name||''}).sort(function(a,b){return b.replace(/\s/g,'').length-a.replace(/\s/g,'').length})[0];
+    var tc=null;G.forEach(function(r){if(tc==null&&r.tc!=null)tc=r.tc});return {name:nm,power:best.power,tc:tc,y:best.y,x:best.x,h:best.h}})
+   .sort(function(a,b){return Math.abs(a.y-b.y)>a.h?a.y-b.y:a.x-b.x});
+}
 var TESS_URL=window.KS_TESS_URL||'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
 function loadScript(u){return new Promise(function(res,rej){if(window.Tesseract)return res();var sc=document.createElement('script');sc.src=u;sc.onload=function(){res()};sc.onerror=function(){rej(new Error('Could not load the text reader — check your internet'))};document.head.appendChild(sc)})}
-function fileToCanvas(f){return new Promise(function(res,rej){var u=URL.createObjectURL(f),img=new Image();img.onload=function(){
+function fileToCanvas(f,dark){return new Promise(function(res,rej){var u=URL.createObjectURL(f),img=new Image();img.onload=function(){
   var sc=Math.min(2,2200/img.width),w=Math.round(img.width*sc),h=Math.round(img.height*sc),cv=document.createElement('canvas');cv.width=w;cv.height=h;var cx=cv.getContext('2d');cx.drawImage(img,0,0,w,h);
-  var d=cx.getImageData(0,0,w,h),a=d.data;for(var i=0;i<a.length;i+=4){var on=a[i]>205&&a[i+1]>205&&a[i+2]>205,v=on?0:255;a[i]=a[i+1]=a[i+2]=v;a[i+3]=255}cx.putImageData(d,0,0);URL.revokeObjectURL(u);res(cv)};
+  var d=cx.getImageData(0,0,w,h),a=d.data;for(var i=0;i<a.length;i+=4){var on=dark?(0.299*a[i]+0.587*a[i+1]+0.114*a[i+2])<110:(a[i]>205&&a[i+1]>205&&a[i+2]>205),v=on?0:255;a[i]=a[i+1]=a[i+2]=v;a[i+3]=255}cx.putImageData(d,0,0);URL.revokeObjectURL(u);res(cv)};
   img.onerror=function(){rej(new Error('Not an image'))};img.src=u})}
 function ocrWords(data){if(data.words&&data.words.length)return data.words;var out=[];(data.blocks||[]).forEach(function(b){(b.paragraphs||[]).forEach(function(p){(p.lines||[]).forEach(function(l){(l.words||[]).forEach(function(w){out.push(w)})})})});return out}
 function lcsLen(a,b){var best=0,prev=new Array(b.length+1).fill(0);for(var i=1;i<=a.length;i++){var cur=new Array(b.length+1).fill(0);for(var j=1;j<=b.length;j++){if(a[i-1]===b[j-1]){cur[j]=prev[j-1]+1;if(cur[j]>best)best=cur[j]}}prev=cur}return best}
@@ -573,9 +598,11 @@ function processShots(files){
   files=[].slice.call(files||[]).filter(function(f){return /^image\//.test(f.type)});if(!files.length)return;
   ui.shot={busy:true,msg:'Loading the text reader…',rows:[]};render();var worker,all=[];
   loadScript(TESS_URL).then(function(){return window.Tesseract.createWorker('eng')}).then(function(w){worker=w;return w.setParameters({tessedit_pageseg_mode:'11'})}).then(function(){
-    var chain=Promise.resolve();files.forEach(function(f,n){chain=chain.then(function(){ui.shot.msg='Reading screenshot '+(n+1)+' of '+files.length+'…';render();return fileToCanvas(f)}).then(function(cv){return worker.recognize(cv)}).then(function(r){all=all.concat(parseShot(ocrWords(r.data)))})});return chain})
+    var chain=Promise.resolve();files.forEach(function(f,n){var found=[];
+      [false,true].forEach(function(dark){chain=chain.then(function(){ui.shot.msg='Reading screenshot '+(n+1)+' of '+files.length+(dark?' (pass 2)':'')+'…';render();return fileToCanvas(f,dark)}).then(function(cv){return worker.recognize(cv)}).then(function(r){var w=ocrWords(r.data);found=found.concat(parseShot(w),parseRank(w))})});
+      chain=chain.then(function(){all=all.concat(mergeRows(found))})});return chain})
   .then(function(){if(worker)worker.terminate();var seen={},rows=all.filter(function(r){var k=nameKey(r.name)+'|'+r.power;if(seen[k])return false;seen[k]=1;return true});
-    ui.shot={busy:false,rows:matchShotRows(rows)};if(!rows.length)toast('No members found on the screenshot — use the alliance member list with names and power visible');render()})
+    ui.shot={busy:false,rows:matchShotRows(rows)};if(!rows.length)toast('No members found on the screenshot — use the alliance member list or the Alliance Ranking (Power tab)');render()})
   .catch(function(e){if(worker)worker.terminate();ui.shot=null;toast((e&&e.message)||'Could not read the screenshot');render()});
 }
 function shotHtml(){var S=ui.shot;if(!S)return '';
@@ -784,7 +811,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
- {v:'2.19',date:'2026-11-11',title:'Import from screenshots',items:['New on the Members tab: 📷 Import screenshots. Pick one or more screenshots of the in-game alliance member list and the app reads the names, power and TC/Truegold level.','You check the result before anything changes: every row shows the member it matched (closest power first in the list), the power and the TC level, and you can fix or skip rows.','TC levels above 30 now show as Truegold (TG1, TG2…). Type TG3 in the TC box to set it.']},
+ {v:'2.19',date:'2026-11-11',title:'Import from screenshots',items:['New on the Members tab: 📷 Import screenshots. Pick one or more screenshots of the in-game alliance member list or the Alliance Ranking (Power tab) and the app reads the names, power and TC/Truegold level.','You check the result before anything changes: every row shows the member it matched (closest power first in the list), the power and the TC level, and you can fix or skip rows.','TC levels above 30 now show as Truegold (TG1, TG2…). Type TG3 in the TC box to set it.']},
  {v:'2.18',date:'2026-11-11',title:'New Swordland roles',items:['Swordland now uses the roles Attacker, Defender, Support and Scout, with clearer descriptions.','Role sizes adjust automatically: each role gets a share of the players, and Auto-assign works out the numbers for however many players join.','Groups are now a simple on/off switch per role; groups are named after the role (Defender 1, Defender 2…).','Older Swordland events show a “Use the new roles” button.']},
  {v:'2.17',date:'2026-11-11',title:'Castle Battle',items:['New event type: Castle Battle. Auto-assign splits the players into the castle and the turrets.','R4s choose which turrets we attack (North, East, South, West) and can turn the castle attack off when we only help — then everyone goes to the turrets.','The sign-up page asks the Truegold level of infantry, cavalry and archers for Castle Battle. The castle gets the players with the highest Truegold first.']},
  {v:'2.16',date:'2026-11-11',title:'Clearer event choice · Vikings without callers',items:['Viking Vengeance has no Caller / Backup caller any more. Auto-assign now also makes the garrison groups straight away.','The event dropdown on the sign-up page starts empty with “👉 Tap here and choose an event” — members pick the event themselves.']},

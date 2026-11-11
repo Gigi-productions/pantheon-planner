@@ -1,5 +1,5 @@
 // THE Pantheon Planner — offline support. Bump VERSION if you ever change icons/manifest.
-const VERSION = 'pantheon-v14';
+const VERSION = 'pantheon-v15';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
