@@ -831,9 +831,11 @@ function submitSignup(eid,value){
     function(er){ui.suBusy=false;toast('Could not save ('+((er&&er.code)||'error')+') — try again');safeRender()});
 }
 /* ---------- per-event sign-up answers ---------- */
-var ANS={'in':'✅ I’m in','out':'❌ Can’t join','on':'🟢 Online','part':'🌓 Part of the time','off':'💤 Offline'};
+var ANS={'added':'➕ Added by R4','in':'✅ I’m in','out':'❌ Can’t join','on':'🟢 Online','part':'🌓 Part of the time','off':'💤 Offline'};
 function evOpts(e){return e.type==='vikings'?['on','part','off']:['in','out']}
-function evYes(a){return a==='in'||a==='on'||a==='part'}
+function evYes(a){return a==='in'||a==='on'||a==='part'||a==='added'}
+function addManual(e,id){e.manual=e.manual||[];if(e.manual.indexOf(id)<0)e.manual.push(id)}
+function addedByR4(e){return e.participants.map(member).filter(function(m){return m&&!evAnswer(e,m)})}
 function evIcon(e){return e.type==='tri'?'🛡️':e.type==='swordland'?'⚔️':e.type==='vikings'?'🪓':e.type==='castle'?'🏰':'📋'}
 var TURRETS=[{k:'N',n:'North turret'},{k:'E',n:'East turret'},{k:'S',n:'South turret'},{k:'W',n:'West turret'}],TGK=[['inf','Infantry'],['cav','Cavalry'],['arc','Archers']];
 function castleRoles(e){var turs=TURRETS.filter(function(t){return (e.turrets||[]).indexOf(t.k)>=0}),old=e.roles||[],r=[];
@@ -865,7 +867,7 @@ function evAnswer(e,m){var s=suOf(m);if(s&&s.ev&&ANS[s.ev[e.id]])return s.ev[e.i
   if(e.type==='vikings')return (s&&s.vikings)||m.vikings||'';
   var l=(s&&s.legion)||m.legion||'';if(e.legion==='1'||e.legion==='2')return l===e.legion?'in':l==='out'?'out':'';return l==='out'?'out':''}
 function evRoster(e){ /* {a:answer, name} for everyone who answered, incl. new names not in the member list yet */
-  var out=[],seen={};state.members.filter(function(m){return m.active!==false}).forEach(function(m){var a=evAnswer(e,m);if(a){out.push({a:a,name:m.name,m:m});seen[m.id]=1}});
+  var out=[],seen={};state.members.filter(function(m){return m.active!==false||e.participants.indexOf(m.id)>=0}).forEach(function(m){var a=evAnswer(e,m)||(e.participants.indexOf(m.id)>=0?'added':'');if(a){out.push({a:a,name:m.name,m:m});seen[m.id]=1}});
   (cloud.signups||[]).forEach(function(s){if(s.memberId&&member(s.memberId))return;var a=s.ev&&s.ev[e.id];if(!a&&!e.created){a=e.type==='vikings'?s.vikings:(s.legion===e.legion?'in':s.legion==='out'?'out':'')}if(ANS[a])out.push({a:a,name:s.name,isNew:true})});
   return out.sort(function(x,y){return x.name.toLowerCase()<y.name.toLowerCase()?-1:1});
 }
@@ -926,7 +928,7 @@ function viewSignup(){
     h+='<div class="card su-count"><div class="row" style="margin-bottom:6px"><h3 class="grow" style="margin:0">'+evIcon(e)+' '+esc(e.name)+(e.type==='vikings'?'':' <span class="muted small">· '+esc(evWho(e))+'</span>')+'</h3><span class="su-big"><b>'+yes+'</b> joining</span></div>'
      +'<div class="small muted" style="margin-bottom:8px">🕒 '+esc(e.date?fmtDate(e.date,e.time):'date to be announced')+'</div>';
     if(!ro.length)h+='<p class="muted small" style="margin:0">Nobody yet — be the first!</p>';
-    opts.forEach(function(o){var n=ro.filter(function(x){return x.a===o});if(n.length)h+='<p class="small" style="margin:0 0 6px"><b style="color:var(--gold2)">'+ANS[o]+' ('+n.length+'):</b> '+n.map(function(x){return esc(x.name)}).join(', ')+'</p>'});
+    opts.concat(['added']).forEach(function(o){var n=ro.filter(function(x){return x.a===o});if(n.length)h+='<p class="small" style="margin:0 0 6px"><b style="color:var(--gold2)">'+ANS[o]+' ('+n.length+'):</b> '+n.map(function(x){return esc(x.name)}).join(', ')+'</p>'});
     h+='</div>'});
   h+='</div>';
   return h;
@@ -970,6 +972,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.28',date:'2026-11-11',title:'Hand-added players stay in events',items:['Players you add to an event yourself (on the event or from the Members tab) now show up under “Signed up per event” as ➕ Added by R4.','Import from sign-ups no longer removes them: it only adds players, and only takes out players who answered “Can’t join” / Offline (unless you added them yourself).']},
  {v:'2.27',date:'2026-11-11',title:'Correct TC levels from MightPulse',items:['MightPulse counts 5 steps per Truegold level (35 = TG1, 40 = TG2, 45 = TG3). The sync now converts this correctly — run 🔄 Sync from MightPulse once to fix levels that showed as TG10.']},
  {v:'2.26',date:'2026-11-11',title:'Simpler member updates',items:['The Members tab now uses only 🔄 Sync from MightPulse to update power, TC levels and names. The Kingshot Oracle buttons and the screenshot import are removed.']},
  {v:'2.25',date:'2026-11-11',title:'📊 Insights tab',items:['New tab with MightPulse data: overview (alliance power, kingdom rank, TC levels, top 10), power growth and kills compared with yesterday / 7 / 30 days ago, a roster check against the planner, and for R4s a player and kingdom lookup.','Switch it on in Settings → MightPulse: off, R4s only, or everyone. Every refresh or sync saves a daily snapshot so growth can be tracked.']},
@@ -1068,24 +1071,26 @@ function vikAvail(m,e){return e&&e.type==='vikings'?evAnswer(e,m):''}
 function availMark(e,m){if(e.type==='castle')return tgTag(m);if(e.type!=='vikings')return '';var a=vikAvail(m,e);return a?'<span class="avail" title="Viking Vengeance: '+CESN[a]+'">'+CESI[a]+'</span>':'<span class="avail" title="No answer yet">❔</span>'}
 function vikHtml(e){
   if(e.type!=='vikings')return '';
-  var g={on:[],part:[],off:[],none:[]};state.members.filter(function(m){return m.active!==false}).sort(function(a,b){return b.power-a.power}).forEach(function(m){var a=vikAvail(m,e);(g[a]||g.none).push(m)});
+  var g={on:[],part:[],off:[],none:[]};state.members.filter(function(m){return m.active!==false}).sort(function(a,b){return b.power-a.power}).forEach(function(m){var a=vikAvail(m,e);if(!a&&e.participants.indexOf(m.id)>=0)return;(g[a]||g.none).push(m)});
   var pendingNew=evRoster(e).filter(function(x){return x.isNew}).length;
   var h='<div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow" style="margin:0">🪓 Who’s online — from the sign-ups</h2><span class="row eo" style="gap:6px"><button class="btn gold sm" data-act="cesimport"'+(g.on.length+g.part.length?'':' disabled')+'>📥 Import into this event</button>'+(e.created?'':ui.confirmDel==='cesclear'?'<button class="btn sm danger" data-act="cesclear">Yes, clear answers</button><button class="btn sm ghost" data-act="nodel">No</button>':'<button class="btn sm ghost danger" data-act="cesclear">Clear old answers</button>')+'</span></div>';
-  h+='<p class="muted small" style="margin:0 0 10px">Answers from the <a href="#signup" style="color:var(--gold2)">Sign-up</a> page. <b>Import</b> makes everyone who is 🟢 online or 🌓 partly online the participants of this event; online players get priority for the HQ garrison when you click Auto-assign, and garrison groups spread the online players evenly. Answers belong to this event only — the next Viking Vengeance starts empty.</p>';
+  h+='<p class="muted small" style="margin:0 0 10px">Answers from the <a href="#signup" style="color:var(--gold2)">Sign-up</a> page. <b>Import</b> adds everyone who is 🟢 online or 🌓 partly online (players you added yourself are kept, 💤 offline players are taken out); online players get priority for the HQ garrison when you click Auto-assign, and garrison groups spread the online players evenly. Answers belong to this event only — the next Viking Vengeance starts empty.</p>';
   h+='<div class="row" style="gap:16px;margin-bottom:8px"><span>🟢 <b>'+g.on.length+'</b> online</span><span>🌓 <b>'+g.part.length+'</b> part of the time</span><span>💤 <b>'+g.off.length+'</b> offline</span><span class="muted">❔ <b>'+g.none.length+'</b> no answer</span></div>';
   [['on','🟢 Online'],['part','🌓 Part of the time'],['off','💤 Offline'],['none','❔ No answer yet']].forEach(function(k){if(g[k[0]].length)h+='<p class="small" style="margin:0 0 6px"><b style="color:var(--gold2)">'+k[1]+':</b> '+g[k[0]].map(function(m){return esc(m.name)}).join(', ')+'</p>'});
+  var adV=addedByR4(e);if(adV.length)h+='<p class="small" style="margin:0 0 6px"><b style="color:var(--gold2)">➕ Added by R4 ('+adV.length+'):</b> '+adV.map(function(m){return esc(m.name)}).join(', ')+'</p>';
   if(pendingNew)h+='<p class="small" style="color:#f0a35b;margin:6px 0 0">'+pendingNew+' new name'+(pendingNew===1?'':'s')+' answered too — apply them on the Sign-up tab first to include them.</p>';
   return h+'</div>';
 }
 function legionSignupHtml(e){
   if(e.type==='vikings')return '';
   var act=state.members.filter(function(m){return m.active!==false}).sort(function(a,b){return b.power-a.power});
-  var yes=act.filter(function(m){return evAnswer(e,m)==='in'}),no=act.filter(function(m){return evAnswer(e,m)==='out'}),none=act.filter(function(m){return !evAnswer(e,m)});
+  var adL=addedByR4(e),yes=act.filter(function(m){return evAnswer(e,m)==='in'}),no=act.filter(function(m){return evAnswer(e,m)==='out'}),none=act.filter(function(m){return !evAnswer(e,m)});
   var pendingNew=evRoster(e).filter(function(x){return x.isNew&&x.a==='in'}).length;
   var h='<div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow" style="margin:0">📝 Signed up for this event</h2><span class="eo"><button class="btn gold sm" data-act="legimport"'+(yes.length?'':' disabled')+'>📥 Import into this event</button></span></div>';
-  h+='<p class="muted small" style="margin:0 0 10px">Answers from the <a href="#signup" style="color:var(--gold2)">Sign-up</a> page for this event. <b>Import</b> makes everyone who said “I’m in” the participants. Then click Auto-assign.</p>';
-  h+='<div class="row" style="gap:16px;margin-bottom:8px"><span>✅ <b>'+yes.length+'</b> joining</span><span class="muted">❌ <b>'+no.length+'</b> can’t join</span><span class="muted">❔ <b>'+none.length+'</b> no answer</span></div>';
+  h+='<p class="muted small" style="margin:0 0 10px">Answers from the <a href="#signup" style="color:var(--gold2)">Sign-up</a> page for this event. <b>Import</b> adds everyone who said “I’m in”. Players you added yourself are kept; only players who answered “Can’t join” are taken out. Then click Auto-assign.</p>';
+  h+='<div class="row" style="gap:16px;margin-bottom:8px"><span>✅ <b>'+yes.length+'</b> joining'+(adL.length?' + <b>'+adL.length+'</b> added by R4':'')+'</span><span class="muted">❌ <b>'+no.length+'</b> can’t join</span><span class="muted">❔ <b>'+none.length+'</b> no answer</span></div>';
   if(yes.length)h+='<p class="small" style="margin:0 0 6px"><b style="color:var(--gold2)">Joining:</b> '+yes.map(function(m){return esc(m.name)}).join(', ')+'</p>';
+  if(adL.length)h+='<p class="small" style="margin:0 0 6px"><b style="color:var(--gold2)">➕ Added by R4:</b> '+adL.map(function(m){return esc(m.name)}).join(', ')+'</p>';
   if(no.length)h+='<p class="small muted" style="margin:0 0 6px">Can’t join: '+no.map(function(m){return esc(m.name)}).join(', ')+'</p>';
   if(pendingNew)h+='<p class="small" style="color:#f0a35b;margin:6px 0 0">'+pendingNew+' new name'+(pendingNew===1?'':'s')+' signed up — apply them on the Sign-up tab first to include them.</p>';
   return h+'</div>';
@@ -1295,7 +1300,7 @@ root.addEventListener('click',function(ev){
   if(act==='mptest'){mpSync();go('leden');return}
   if(act==='selclear'){ui.msel={};return render()}
   if(act==='seladd'){var se=root.querySelector('#selev'),E2=se&&ev_(se.value);if(!E2)return;ui.selEv=E2.id;var ids=Object.keys(ui.msel||{}).filter(member),added=0;
-    ids.forEach(function(id){if(E2.participants.indexOf(id)<0){E2.participants.push(id);added++}});
+    ids.forEach(function(id){if(E2.participants.indexOf(id)<0){E2.participants.push(id);added++}addManual(E2,id)});
     toast('Added '+added+' to '+E2.name+(ids.length-added?' · '+(ids.length-added)+' already in it':'')+(added&&E2.assignment?' — click Auto-assign again to give them a role':''));ui.msel={};return touch()}
   if(act==='dupcheck'){ui.dupOpen=true;var nP=dupPairs().length;toast(nP?nP+' possible match'+(nP===1?'':'es')+' found':'No doubles or name changes found');return render()}
   if(act==='dupclose'){ui.dupOpen=false;return render()}
@@ -1345,19 +1350,19 @@ root.addEventListener('click',function(ev){
 
   if(act==='copylist'){var t=sortedMembers().map(function(m){return m.name+', '+fmt(m.power)}).join('\n');if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('List copied — change the numbers and paste it back')},function(){showText(t)});else showText(t);return}
   if(!e)return;
-  if(act==='addall'){state.members.forEach(function(m){if(m.active!==false&&fitsLegion(m,e)&&e.participants.indexOf(m.id)<0)e.participants.push(m.id)});return touch()}
-  if(act==='addtop'){var n=+(document.getElementById('topn')||{}).value||20;sortedMembers().filter(function(m){return m.active!==false&&fitsLegion(m,e)}).slice(0,n).forEach(function(m){if(e.participants.indexOf(m.id)<0)e.participants.push(m.id)});return touch()}
+  if(act==='addall'){state.members.forEach(function(m){if(m.active!==false&&fitsLegion(m,e)&&e.participants.indexOf(m.id)<0){e.participants.push(m.id);addManual(e,m.id)}});return touch()}
+  if(act==='addtop'){var n=+(document.getElementById('topn')||{}).value||20;sortedMembers().filter(function(m){return m.active!==false&&fitsLegion(m,e)}).slice(0,n).forEach(function(m){if(e.participants.indexOf(m.id)<0){e.participants.push(m.id);addManual(e,m.id)}});return touch()}
   if(act==='clearparts'){e.participants=[];e.assignment=null;return touch()}
-  if(act==='rmpart'){var id=b.getAttribute('data-id');e.participants=e.participants.filter(function(p){return p!==id});if(e.assignment)delete e.assignment[id];return touch()}
+  if(act==='rmpart'){var id=b.getAttribute('data-id');e.participants=e.participants.filter(function(p){return p!==id});if(e.manual)e.manual=e.manual.filter(function(p){return p!==id});if(e.assignment)delete e.assignment[id];return touch()}
   if(act==='statsreload'){ui.stats=null;loadStats();return render()}
   if(act==='legimport'){var lids=state.members.filter(function(m){return m.active!==false&&evAnswer(e,m)==='in'}).sort(function(a,b){return b.power-a.power}).map(function(m){return m.id});
-    var lrem=e.participants.filter(function(id){return lids.indexOf(id)<0});lrem.forEach(function(id){if(e.assignment)delete e.assignment[id];if(e.gar)delete e.gar[id]});
-    var ladd=lids.filter(function(id){return e.participants.indexOf(id)<0}).length;e.participants=lids;
-    toast(lids.length+' players signed up'+(ladd?' · '+ladd+' added':'')+(lrem.length?' · '+lrem.length+' removed':'')+' — click Auto-assign');return touch()}
+    var lrem=e.participants.filter(function(id){var m=member(id);return m&&evAnswer(e,m)==='out'&&(e.manual||[]).indexOf(id)<0});lrem.forEach(function(id){if(e.assignment)delete e.assignment[id];if(e.gar)delete e.gar[id]});
+    var ladd=lids.filter(function(id){return e.participants.indexOf(id)<0}).length;e.participants=e.participants.filter(function(id){return lrem.indexOf(id)<0}).concat(lids.filter(function(id){return e.participants.indexOf(id)<0}));
+    toast(e.participants.length+' players in this event'+(ladd?' · '+ladd+' added':'')+(lrem.length?' · '+lrem.length+' removed (can’t join)':'')+' — click Auto-assign');return touch()}
   if(act==='cesimport'){var ids=state.members.filter(function(m){var a=vikAvail(m,e);return m.active!==false&&(a==='on'||a==='part')}).sort(function(a,b){return b.power-a.power}).map(function(m){return m.id});
-    var removed=e.participants.filter(function(id){return ids.indexOf(id)<0});removed.forEach(function(id){if(e.assignment)delete e.assignment[id];if(e.gar)delete e.gar[id]});
-    var added=ids.filter(function(id){return e.participants.indexOf(id)<0}).length;e.participants=ids;
-    toast(ids.length+' online players in this event'+(added?' · '+added+' added':'')+(removed.length?' · '+removed.length+' removed (offline / no answer)':'')+' — click Auto-assign');return touch()}
+    var removed=e.participants.filter(function(id){var m=member(id);return m&&vikAvail(m,e)==='off'&&(e.manual||[]).indexOf(id)<0});removed.forEach(function(id){if(e.assignment)delete e.assignment[id];if(e.gar)delete e.gar[id]});
+    var added=ids.filter(function(id){return e.participants.indexOf(id)<0}).length;e.participants=e.participants.filter(function(id){return removed.indexOf(id)<0}).concat(ids.filter(function(id){return e.participants.indexOf(id)<0}));
+    toast(e.participants.length+' players in this event'+(added?' · '+added+' added':'')+(removed.length?' · '+removed.length+' removed (offline)':'')+' — click Auto-assign');return touch()}
   if(act==='cesclear'){if(ui.confirmDel!=='cesclear'){ui.confirmDel='cesclear';return render()}ui.confirmDel=null;var nc=0;state.members.forEach(function(m){if(m.vikings){m.vikings='';nc++}});toast('Cleared '+nc+' Viking answer'+(nc===1?'':'s')+(cloud.signups&&cloud.signups.some(function(s){return s.vikings})?' (sign-ups waiting on the Sign-up tab are not touched)':''));return touch()}
   if(act==='garmake'){var gs=+(document.getElementById('garsize')||{}).value||3;var k=makeGarrison(e,gs);toast(k+' garrison group'+(k===1?'':'s')+' made');return touch()}
   if(act==='garclear'){e.gar=null;e.garN=0;toast('Garrison groups removed');return touch()}
@@ -1398,7 +1403,7 @@ root.addEventListener('change',function(ev){
     else if(mf==='active')m.active=t.checked;
     else if(mf==='legion')m.legion=t.checked?t.getAttribute('data-v'):'';
     return touch()}
-  if(t.getAttribute('data-act-change')==='addpart'&&e&&t.value){e.participants.push(t.value);return touch()}
+  if(t.getAttribute('data-act-change')==='addpart'&&e&&t.value){e.participants.push(t.value);addManual(e,t.value);return touch()}
   if(!e)return;
   var cf=t.getAttribute('data-cf');
   if(cf){if(cf==='castleOn')e.castleOn=t.checked;else if(cf==='castleN')e.castleN=Math.max(1,+t.value||1);else if(cf==='tur'){var tk=t.getAttribute('data-v'),ta=(e.turrets||[]).filter(function(x){return x!==tk});if(t.checked)ta.push(tk);e.turrets=TURRETS.map(function(x){return x.k}).filter(function(k){return ta.indexOf(k)>=0})}
