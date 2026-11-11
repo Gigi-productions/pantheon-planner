@@ -488,14 +488,14 @@ function viewMembers(){
   var maxP=sorted.length?sorted[0].power:1;
   var nSu=CLOUD&&cloud.user?(cloud.signups||[]).filter(suNeedsAction).length:0;
   var h=banner+(nSu?'<div class="hint" style="margin-bottom:14px">📝 <b>'+nSu+' sign-up'+(nSu===1?'':'s')+' to accept'+'</b>'+((cloud.signups||[]).some(function(x){return x.power})?' (incl. power updates)':'')+' — <a href="#signup" style="color:var(--gold2)">accept them on the Sign-up tab to put them into the events</a>.</div>':'')+'<div class="stats"><div class="stat"><b>'+ms.length+'</b><span>Members</span></div><div class="stat"><b>'+act+'</b><span>Active</span></div><div class="stat"><b>'+fmt(total)+'</b><span>Total power</span></div><div class="stat"><b>'+fmt(ms.length?total/ms.length:0)+'</b><span>Average</span></div></div>';
-  h+='<div class="card eo"><h2>Add member</h2><form class="row" data-form="add"><input type="text" name="name" placeholder="Name" class="grow" required data-focus="addname"><input type="text" name="power" placeholder="Power, e.g. 45.2M" style="width:170px" required><button class="btn gold">Add</button></form><div class="row small" style="margin-top:10px;gap:8px"><span class="muted">Kingshot Oracle:</span><button class="btn sm" data-act="oracle" title="Opens your Oracle channel in Discord'+(state.oracleCmd?' and copies the command':'')+'">💬 Open in Discord</button><button class="btn sm" data-act="pasteimport" title="Imports the Oracle list you copied in Discord">📋 Paste &amp; import</button>'+(state.oracleUrl?'':'<a href="#instellingen" class="muted" style="color:var(--gold2)">Set the channel link in Settings</a>')+'</div>';
+  h+='<div class="card eo"><h2>Add member</h2><form class="row" data-form="add"><input type="text" name="name" placeholder="Name" class="grow" required data-focus="addname"><input type="text" name="power" placeholder="Power, e.g. 45.2M" style="width:170px" required><button class="btn gold">Add</button></form><div class="row small" style="margin-top:10px;gap:8px"><span class="muted">Kingshot Oracle:</span><button class="btn sm" data-act="oracle" title="Opens your Oracle channel in Discord'+(state.oracleCmd?' and copies the command':'')+'">💬 Open in Discord</button><button class="btn sm" data-act="pasteimport" title="Imports the Oracle list you copied in Discord">📋 Paste &amp; import</button><label class="btn sm" style="cursor:pointer" title="Pick one or more screenshots of the in-game alliance member list">📷 Import screenshots<input type="file" accept="image/*" multiple data-shotfile style="display:none"></label>'+(state.oracleUrl?'':'<a href="#instellingen" class="muted" style="color:var(--gold2)">Set the channel link in Settings</a>')+'</div>'+shotHtml();
   h+='<details style="margin-top:12px"'+(ui.bulkOpen?' open':'')+' data-bulk><summary class="muted" style="cursor:pointer">Paste many at once — add new members or update everyone’s power</summary><p class="muted small">One member per line: <code>Name, power</code> (tab, semicolon or space also work). Power can be 45.2M, 45.2 or 45200000. Names are matched without caring about capitals, so existing members just get their new power.<br><b>Kingshot Oracle lists work too:</b> paste the member list from Discord (all pages at once is fine); the name, power and TC level are used. Decorated names (ᵀᴴᴱ, 兮༒, 乇…) are matched to your existing members, and the import result shows which ones were matched by a similar name so you can check them.<br><b>Quick update:</b> click <i>Copy current list</i>, paste it in Notes/Discord, change the numbers, paste it back here and click Import.</p><textarea id="bulk" placeholder="DragonSlayer, 82.4M&#10;Luna; 61,7&#10;KnightBob 39500000"></textarea><div class="row" style="margin-top:8px"><button class="btn gold" data-act="bulk">Import</button><label class="row small muted" style="gap:6px"><input type="checkbox" id="bulkonly"'+(ui.bulkOnly?' checked':'')+'> Only update existing members (don’t add new names)</label><span class="grow"></span><button class="btn" data-act="copylist">Copy current list</button></div>'+bulkReport()+'</details></div>';
   h+='<div class="card"><div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">Member list</h2><span class="eo">'+(ms.length?delBtn('all','🗑 Delete all'):'')+'</span><input type="text" placeholder="Search…" value="'+esc(ui.search)+'" data-f="search" data-focus="search" style="width:180px"><select data-f="sort"><option value="power"'+(ui.sort==='power'?' selected':'')+'>By power</option><option value="name"'+(ui.sort==='name'?' selected':'')+'>By name</option><option value="tc"'+(ui.sort==='tc'?' selected':'')+'>By TC level</option></select></div>';
   if(!ms.length){h+='<div class="empty">No members yet. Add them above or paste a whole list at once.</div></div>';return h}
   h+='<div style="overflow-x:auto"><table class="mt"><thead><tr><th>#</th><th class="nm">Name</th><th class="num">Power</th><th title="Town Center level">TC</th><th class="hm">Tier</th><th class="hm">Updated</th><th>Active</th><th></th></tr></thead><tbody>';
   shown.forEach(function(m){
     var rank=sorted.indexOf(m)+1,t=tierOf(m);
-    h+='<tr><td class="rank">'+rank+'</td><td class="nm"><input type="text" value="'+esc(m.name)+'" data-mf="name" data-id="'+m.id+'" title="'+esc(m.name)+'"></td><td class="num pw" style="width:150px"><input type="text" value="'+fmt(m.power)+'" data-mf="power" data-id="'+m.id+'" style="width:100px;text-align:right"><div class="bar"><i style="width:'+Math.round(m.power/maxP*100)+'%"></i></div></td><td><input type="number" min="1" max="99" value="'+(m.tc||'')+'" data-mf="tc" data-id="'+m.id+'" placeholder="–" style="width:58px;text-align:center"></td><td class="hm"><span class="tier t'+t+'">'+(t===1?'Top 20%':t===2?'Middle':'Bottom 40%')+'</span></td><td class="hm" style="white-space:nowrap">'+ago(m.updated)+delta(m)+'</td><td><input type="checkbox" data-mf="active" data-id="'+m.id+'"'+(m.active!==false?' checked':'')+'></td><td class="num">'+delBtn('m:'+m.id)+'</td></tr>';
+    h+='<tr><td class="rank">'+rank+'</td><td class="nm"><input type="text" value="'+esc(m.name)+'" data-mf="name" data-id="'+m.id+'" title="'+esc(m.name)+'"></td><td class="num pw" style="width:150px"><input type="text" value="'+fmt(m.power)+'" data-mf="power" data-id="'+m.id+'" style="width:100px;text-align:right"><div class="bar"><i style="width:'+Math.round(m.power/maxP*100)+'%"></i></div></td><td><input type="text" value="'+tcIn(m.tc)+'" data-mf="tc" data-id="'+m.id+'" placeholder="–" title="Town Center level: 1–30, or TG1, TG2… for Truegold" style="width:58px;text-align:center"></td><td class="hm"><span class="tier t'+t+'">'+(t===1?'Top 20%':t===2?'Middle':'Bottom 40%')+'</span></td><td class="hm" style="white-space:nowrap">'+ago(m.updated)+delta(m)+'</td><td><input type="checkbox" data-mf="active" data-id="'+m.id+'"'+(m.active!==false?' checked':'')+'></td><td class="num">'+delBtn('m:'+m.id)+'</td></tr>';
   });
   h+='</tbody></table></div><p class="muted small eo" style="margin:10px 0 0">Tip: type a new power and press <b>Enter</b> to jump to the next member. Power that hasn’t been updated for 7+ days turns orange. Untick <b>Active</b> for members who left or are inactive: they’re skipped on events. Who joins which event comes from the Sign-up page.</p></div>';
   return h;
@@ -530,6 +530,69 @@ function findMember(name,used){
     if(r>bestR){best=x;bestR=r;tie=false}else if(r===bestR)tie=true});
   return best&&bestR>=0.5&&!tie?{m:best,fuzzy:true}:null;
 }
+function parseShot(words){
+  var W=words.map(function(w){return {t:String(w.text||'').trim(),x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1,c:+w.confidence||0}}).filter(function(w){return w.t});
+  var PRE=/^[^\d]{0,2}(\d{1,4}(?:[.,]\d{1,2})?)\s*([mMbBkK])[mM]?[)\].,!]*$/;
+  var P=W.filter(function(w){return PRE.test(w.t)&&!/^lv/i.test(w.t)});
+  var rows=[];
+  P.forEach(function(p){var h=p.y1-p.y0,m=p.t.match(PRE),num=parseFloat(m[1].replace(',','.')),u=m[2].toUpperCase();
+    var power=Math.round(num*(u==='B'?1e9:u==='M'?1e6:1e3));
+    var right=Infinity;P.forEach(function(q){if(q!==p&&q.x0>p.x0+4*h&&Math.abs(q.y0-p.y0)<6*h)right=Math.min(right,q.x0-3.2*h)});
+    var inCol=function(w){return w.x0>=p.x0-3.4*h&&w.x0<right};
+    var nameW=W.filter(function(w){var cy=(w.y0+w.y1)/2;return inCol(w)&&cy>=p.y0-2.9*h&&cy<=p.y0-0.2*h&&w!==p}).sort(function(a,b){return a.x0-b.x0});
+    var name=nameW.map(function(w){return {t:w.t.replace(/[^\p{L}\p{N}_]/gu,''),c:w.c}}).filter(function(o){var t=o.t;
+      if(t.length<2)return false;if(t.length<=2&&o.c<75)return false;if(o.c<20&&t.length<4)return false;if(/^(the|thie|th|ce|online|ago)$/i.test(t))return false;return true}).map(function(o){return o.t}).join(' ');
+    var tc=null,below=W.filter(function(w){return inCol(w)&&w.y0>=p.y1-0.2*h&&w.y0<=p.y1+2.4*h}).sort(function(a,b){return a.x0-b.x0});
+    below.forEach(function(w,i){if(tc!=null)return;if(/^lv\.?$/i.test(w.t)&&below[i+1]&&/^\d{1,2}$/.test(below[i+1].t))tc=+below[i+1].t;else{var lm=w.t.match(/^lv\.?(\d{1,2})$/i);if(lm)tc=+lm[1]}});
+    if(tc==null)below.forEach(function(w){if(tc==null&&/^[1-9]$/.test(w.t)&&w.c>=60&&w.x0>p.x0)tc=30+(+w.t)});
+    rows.push({name:name,power:power,tc:tc,y:p.y0,x:p.x0});
+  });
+  return rows.sort(function(a,b){return Math.abs(a.y-b.y)>40?a.y-b.y:a.x-b.x});
+}
+
+var TESS_URL=window.KS_TESS_URL||'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+function loadScript(u){return new Promise(function(res,rej){if(window.Tesseract)return res();var sc=document.createElement('script');sc.src=u;sc.onload=function(){res()};sc.onerror=function(){rej(new Error('Could not load the text reader — check your internet'))};document.head.appendChild(sc)})}
+function fileToCanvas(f){return new Promise(function(res,rej){var u=URL.createObjectURL(f),img=new Image();img.onload=function(){
+  var sc=Math.min(2,2200/img.width),w=Math.round(img.width*sc),h=Math.round(img.height*sc),cv=document.createElement('canvas');cv.width=w;cv.height=h;var cx=cv.getContext('2d');cx.drawImage(img,0,0,w,h);
+  var d=cx.getImageData(0,0,w,h),a=d.data;for(var i=0;i<a.length;i+=4){var on=a[i]>205&&a[i+1]>205&&a[i+2]>205,v=on?0:255;a[i]=a[i+1]=a[i+2]=v;a[i+3]=255}cx.putImageData(d,0,0);URL.revokeObjectURL(u);res(cv)};
+  img.onerror=function(){rej(new Error('Not an image'))};img.src=u})}
+function ocrWords(data){if(data.words&&data.words.length)return data.words;var out=[];(data.blocks||[]).forEach(function(b){(b.paragraphs||[]).forEach(function(p){(p.lines||[]).forEach(function(l){(l.words||[]).forEach(function(w){out.push(w)})})})});return out}
+function lcsLen(a,b){var best=0,prev=new Array(b.length+1).fill(0);for(var i=1;i<=a.length;i++){var cur=new Array(b.length+1).fill(0);for(var j=1;j<=b.length;j++){if(a[i-1]===b[j-1]){cur[j]=prev[j-1]+1;if(cur[j]>best)best=cur[j]}}prev=cur}return best}
+function shotScore(r,m){var k=nameKey(r.name),mk=nameKey(m.name),ns=0;if(k&&mk){var l=lcsLen(k,mk);if(k===mk)ns=1.2;else if(l>=3)ns=Math.min(1,l/Math.max(4,Math.min(k.length,mk.length)))}
+  var ps=0;if(m.power>0&&r.power>0){[r.power,r.power/10].forEach(function(rp){var q=Math.min(m.power,rp)/Math.max(m.power,rp),v=q>=0.97?0.6:q>=0.9?0.35:q>=0.75?0.1:0;if(v>ps)ps=v})}return {s:ns+ps,ns:ns,ps:ps}}
+function matchShotRows(rows){
+  var pairs=[];rows.forEach(function(r,i){state.members.forEach(function(m){var sc=shotScore(r,m);if(sc.s>=0.6&&(sc.ns>=0.4||sc.ps>=0.6||(sc.ns>=0.3&&sc.ps>=0.35)))pairs.push({i:i,m:m,sc:sc})})});
+  pairs.sort(function(a,b){return b.sc.s-a.sc.s});var usedR={},usedM={};
+  pairs.forEach(function(p){if(usedR[p.i]||usedM[p.m.id])return;usedR[p.i]=1;usedM[p.m.id]=1;rows[p.i].mid=p.m.id;rows[p.i].sure=p.sc.ns>=0.6||(p.sc.ns>=0.4&&p.sc.ps>0)});
+  rows.forEach(function(r){if(!r.mid){r.mid=r.name&&nameKey(r.name).length>=2?'new':'skip';r.sure=false}
+    var m=member(r.mid);if(m&&m.power&&r.power/m.power>7&&r.power/m.power<13){r.power=Math.round(r.power/10);r.fixed=true}
+    r.warn=m&&m.power&&r.power&&(r.power/m.power<0.6||r.power/m.power>1.6)?'Power looks very different from '+fmt(m.power)+' — check the number':'';
+    r.on=r.mid!=='skip'&&!r.warn;r.newName=r.name});
+  return rows}
+function processShots(files){
+  files=[].slice.call(files||[]).filter(function(f){return /^image\//.test(f.type)});if(!files.length)return;
+  ui.shot={busy:true,msg:'Loading the text reader…',rows:[]};render();var worker,all=[];
+  loadScript(TESS_URL).then(function(){return window.Tesseract.createWorker('eng')}).then(function(w){worker=w;return w.setParameters({tessedit_pageseg_mode:'11'})}).then(function(){
+    var chain=Promise.resolve();files.forEach(function(f,n){chain=chain.then(function(){ui.shot.msg='Reading screenshot '+(n+1)+' of '+files.length+'…';render();return fileToCanvas(f)}).then(function(cv){return worker.recognize(cv)}).then(function(r){all=all.concat(parseShot(ocrWords(r.data)))})});return chain})
+  .then(function(){if(worker)worker.terminate();var seen={},rows=all.filter(function(r){var k=nameKey(r.name)+'|'+r.power;if(seen[k])return false;seen[k]=1;return true});
+    ui.shot={busy:false,rows:matchShotRows(rows)};if(!rows.length)toast('No members found on the screenshot — use the alliance member list with names and power visible');render()})
+  .catch(function(e){if(worker)worker.terminate();ui.shot=null;toast((e&&e.message)||'Could not read the screenshot');render()});
+}
+function shotHtml(){var S=ui.shot;if(!S)return '';
+  if(S.busy)return '<div class="hint" style="margin-top:12px">⏳ '+esc(S.msg)+' <span class="muted small">(the first time this can take ~20 seconds)</span></div>';
+  if(!S.rows.length)return '';
+  var opts=function(r){var ms=state.members.slice().sort(function(a,b){return Math.abs(a.power-r.power)-Math.abs(b.power-r.power)});
+    return '<option value="skip"'+(r.mid==='skip'?' selected':'')+'>— skip —</option><option value="new"'+(r.mid==='new'?' selected':'')+'>➕ Add as new member</option><optgroup label="Members (closest power first)">'+ms.map(function(m){return '<option value="'+m.id+'"'+(r.mid===m.id?' selected':'')+'>'+esc(m.name)+' · '+fmt(m.power)+'</option>'}).join('')+'</optgroup>'};
+  var h='<div class="hint" style="margin-top:12px"><div class="row" style="margin-bottom:6px"><b class="grow">📷 Found '+S.rows.length+' player'+(S.rows.length===1?'':'s')+' — check and apply</b><button class="btn sm ghost" data-act="shotcancel">Cancel</button><button class="btn gold sm" data-act="shotapply">✓ Apply ticked rows</button></div>'
+   +'<p class="small muted" style="margin:0 0 8px">The reader isn’t perfect with fancy names: check the <b>Member</b> column (rows marked ? are a guess) and fix any power it misread. Rows with ⚠ are not ticked yet.</p>'
+   +'<div style="overflow-x:auto"><table><thead><tr><th></th><th>Read</th><th>Member</th><th>Power</th><th>TC</th><th></th></tr></thead><tbody>';
+  S.rows.forEach(function(r,i){var m=member(r.mid);
+    h+='<tr><td><input type="checkbox" data-shot-f="on" data-i="'+i+'"'+(r.on?' checked':'')+'></td><td class="small">'+(r.name?esc(r.name):'<span class="muted">(no name read)</span>')+'</td><td><select data-shot-f="mid" data-i="'+i+'" style="max-width:220px">'+opts(r)+'</select>'+(r.mid==='new'?'<br><input type="text" data-shot-f="newName" data-i="'+i+'" value="'+esc(r.newName||'')+'" placeholder="Name" style="margin-top:4px;width:200px">':'')+(m&&!r.sure?' <span class="small" style="color:#f0a35b" title="Guessed from a similar name or the power">?</span>':'')+'</td>'
+     +'<td style="white-space:nowrap"><input type="text" data-shot-f="power" data-i="'+i+'" value="'+fmt(r.power)+'" style="width:84px;text-align:right">'+(m?' <span class="small muted">was '+fmt(m.power)+'</span>':'')+(r.fixed?' <span class="small" style="color:#f0a35b" title="The decimal point was probably missed — corrected">· fixed</span>':'')+'</td><td><input type="text" data-shot-f="tc" data-i="'+i+'" value="'+(r.tc?tcIn(r.tc):'')+'" placeholder="–" style="width:54px;text-align:center"></td><td class="small" style="color:#f0a35b">'+(r.warn?'⚠ '+esc(r.warn):'')+'</td></tr>'});
+  return h+'</tbody></table></div></div>'}
+function tcLbl(tc){return tc>30?'TG'+(tc-30):'TC'+tc}
+function tcIn(tc){return tc>30?'TG'+(tc-30):(tc||'')}
+function parseTcInput(v){v=String(v||'').trim();var g=v.match(/^tg\s*(\d{1,2})$/i);if(g)return 30+(+g[1]);var n=parseInt(v.replace(/^(tc|lv\.?)\s*/i,''),10);return n>0&&n<=30?n:undefined}
 function parseTC(line){var t=String(line).match(/\bTC\s*(\d{1,2})\b/i);return t?+t[1]:null}
 function parseOracle(line){
   var parts=String(line).split(/\s*[·•]\s*/);if(parts.length<2)return null;
@@ -721,6 +784,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.19',date:'2026-11-11',title:'Import from screenshots',items:['New on the Members tab: 📷 Import screenshots. Pick one or more screenshots of the in-game alliance member list and the app reads the names, power and TC/Truegold level.','You check the result before anything changes: every row shows the member it matched (closest power first in the list), the power and the TC level, and you can fix or skip rows.','TC levels above 30 now show as Truegold (TG1, TG2…). Type TG3 in the TC box to set it.']},
  {v:'2.18',date:'2026-11-11',title:'New Swordland roles',items:['Swordland now uses the roles Attacker, Defender, Support and Scout, with clearer descriptions.','Role sizes adjust automatically: each role gets a share of the players, and Auto-assign works out the numbers for however many players join.','Groups are now a simple on/off switch per role; groups are named after the role (Defender 1, Defender 2…).','Older Swordland events show a “Use the new roles” button.']},
  {v:'2.17',date:'2026-11-11',title:'Castle Battle',items:['New event type: Castle Battle. Auto-assign splits the players into the castle and the turrets.','R4s choose which turrets we attack (North, East, South, West) and can turn the castle attack off when we only help — then everyone goes to the turrets.','The sign-up page asks the Truegold level of infantry, cavalry and archers for Castle Battle. The castle gets the players with the highest Truegold first.']},
  {v:'2.16',date:'2026-11-11',title:'Clearer event choice · Vikings without callers',items:['Viking Vengeance has no Caller / Backup caller any more. Auto-assign now also makes the garrison groups straight away.','The event dropdown on the sign-up page starts empty with “👉 Tap here and choose an event” — members pick the event themselves.']},
@@ -800,7 +864,7 @@ function garrisonHtml(e,parts){
   h+='<div class="groups" style="border-radius:10px;overflow:hidden">';
   var anyAv=e.type==='vikings'&&garrisonPool(e).some(function(m){return vikAvail(m,e)});
   groups.forEach(function(list,i){var on=anyAv?list.filter(function(m){return vikAvail(m,e)==='on'}).length:-1;h+='<div class="group"><div class="group-h"><b>Garrison '+(i+1)+'</b><span>'+(on>=0?'🟢'+on+' · ':'')+list.length+' · '+fmt(sum(list))+' <button class="copyico" data-copy="gar:'+i+'" title="Copy only this group">📋</button></span></div>';
-    list.forEach(function(m){h+='<div class="m">'+availMark(e,m)+'<span class="n">'+esc(m.name)+'</span>'+(m.tc?'<span class="lgtag">TC'+m.tc+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+sel(m,i)+'</div>'});
+    list.forEach(function(m){h+='<div class="m">'+availMark(e,m)+'<span class="n">'+esc(m.name)+'</span>'+(m.tc?'<span class="lgtag">'+tcLbl(m.tc)+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+sel(m,i)+'</div>'});
     if(!list.length)h+='<div class="muted small">Empty</div>';h+='</div>'});
   h+='</div>';
   if(none.length){h+='<div class="small" style="margin-top:10px"><b style="color:var(--gold2)">Not in a group yet:</b> ';h+=none.map(function(m){return '<span class="chip" style="margin:2px">'+esc(m.name)+' '+sel(m,null)+'</span>'}).join(' ')+'</div>'}
@@ -865,7 +929,7 @@ function viewEvent(e){
   h+='<div class="row"><label class="f">Date<input type="date" value="'+esc(e.date)+'" data-ef="date"></label><label class="f">Time<input type="time" value="'+esc(e.time)+'" data-ef="time"></label><label class="f">Legion<select data-ef="legion"><option value="1"'+(e.legion=='1'?' selected':'')+'>Legion 1</option><option value="2"'+(e.legion=='2'?' selected':'')+'>Legion 2</option><option value="all"'+(e.legion=='all'?' selected':'')+'>All legions</option></select></label><label class="f">Max. main players<input type="number" min="0" value="'+(+e.max||0)+'" data-ef="max" style="width:90px"></label><span class="muted small eo" style="align-self:flex-end;padding-bottom:8px">0 = no limit. Anyone beyond the limit goes to Reserve.</span></div></div>';
 
   h+='<div class="card"><h2>Participants <span class="muted small" style="font-family:Inter">'+parts.length+' players · '+fmt(tot)+'</span></h2><div class="row eo" style="margin-bottom:10px"><select data-act-change="addpart" class="grow"><option value="">+ Add member…</option>';
-  avail.sort(function(a,b){return (fitsLegion(b,e)?1:0)-(fitsLegion(a,e)?1:0)||b.power-a.power});avail.forEach(function(m){h+='<option value="'+m.id+'">'+esc(m.name)+' — '+fmt(m.power)+(m.tc?' · TC'+m.tc:'')+(m.legion==='out'?' · Out':m.legion?' · L'+m.legion:'')+(m.active===false?' (inactive)':'')+'</option>'});
+  avail.sort(function(a,b){return (fitsLegion(b,e)?1:0)-(fitsLegion(a,e)?1:0)||b.power-a.power});avail.forEach(function(m){h+='<option value="'+m.id+'">'+esc(m.name)+' — '+fmt(m.power)+(m.tc?' · '+tcLbl(m.tc):'')+(m.legion==='out'?' · Out':m.legion?' · L'+m.legion:'')+(m.active===false?' (inactive)':'')+'</option>'});
   h+='</select><button class="btn" data-act="addall">'+(e.legion==='all'?'All active members':'All active ('+legionLabel(e)+')')+'</button>'+(e.type==='vikings'?'':'<span class="row" style="gap:4px" title="Add the N strongest active players"><button class="btn" data-act="addtop">Add top</button><input type="number" id="topn" min="1" value="'+(+e.max||20)+'" style="width:64px"></span>')+'<button class="btn ghost danger" data-act="clearparts">Clear</button></div>';
   if(!state.members.length)h+='<div class="hint">First add members on the <a href="#leden" style="color:var(--gold2)">Members</a> tab.</div>';
   else if(!parts.length)h+='<p class="muted small">Pick players from the menu, or add all active members or the top X at once.</p>';
@@ -919,7 +983,7 @@ function moveSelect(e,m,cur){
   e.roles.forEach(function(r){for(var g=0;g<Math.max(1,+r.groups||1);g++){var v=r.id+':'+g;o+='<option value="'+v+'"'+(cur===v?' selected':'')+'>'+esc(r.gnames&&r.gnames[g]?r.gnames[g]:r.name+((+r.groups||1)>1?' · '+(g+1):''))+'</option>'}});
   o+='<option value="reserve:0"'+(cur==='reserve:0'?' selected':'')+'>Reserve</option></select>';return o;
 }
-function memberRows(e,list,cur){var h='';list.sort(function(a,b){return b.power-a.power}).forEach(function(m){var star=e.type==='vikings'?'':(e.lead===m.id?' 📣':e.backup===m.id?' 🔁':'');h+='<div class="m">'+availMark(e,m)+'<span class="n">'+esc(m.name)+star+'</span>'+(m.tc?'<span class="lgtag" title="Town Center level">TC'+m.tc+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+moveSelect(e,m,cur)+'</div>'});return h||'<div class="muted small">Empty</div>'}
+function memberRows(e,list,cur){var h='';list.sort(function(a,b){return b.power-a.power}).forEach(function(m){var star=e.type==='vikings'?'':(e.lead===m.id?' 📣':e.backup===m.id?' 🔁':'');h+='<div class="m">'+availMark(e,m)+'<span class="n">'+esc(m.name)+star+'</span>'+(m.tc?'<span class="lgtag" title="Town Center level">'+tcLbl(m.tc)+'</span>':'')+'<span class="p">'+fmt(m.power)+'</span>'+moveSelect(e,m,cur)+'</div>'});return h||'<div class="muted small">Empty</div>'}
 function sum(l){var s=0;l.forEach(function(m){s+=m.power});return s}
 
 function viewAssignment(e,parts){
@@ -1029,6 +1093,12 @@ root.addEventListener('click',function(ev){
     if(k.indexOf('e:')===0){var id2=k.slice(2);state.events=state.events.filter(function(x){return x.id!==id2});persist();return go('events')}
     return touch();
   }
+  if(act==='shotcancel'){ui.shot=null;return render()}
+  if(act==='shotapply'){var S=ui.shot;if(!S)return;var up=0,add=0,tcn=0,usedId={};
+    S.rows.forEach(function(r){if(!r.on||r.mid==='skip')return;
+      if(r.mid==='new'){var nn=String(r.newName||r.name||'').trim();if(!nn)return;var f=findMember(nn,[]);if(f&&!f.fuzzy){r.mid=f.m.id}else{var nm={id:uid(),name:nn,power:r.power,active:true,updated:Date.now(),alias:nameKey(nn)};if(r.tc)nm.tc=r.tc;state.members.push(nm);add++;return}}
+      var m=member(r.mid);if(!m||usedId[m.id])return;usedId[m.id]=1;if(r.power>0&&m.power!==r.power){setPower(m,r.power);up++}else if(!m.updated)m.updated=Date.now();if(r.tc&&m.tc!==r.tc){m.tc=r.tc;tcn++}});
+    ui.shot=null;toast(up+' power updated · '+add+' added'+(tcn?' · '+tcn+' TC level'+(tcn===1?'':'s'):''));return touch()}
   if(act==='bulk'){
     var txt=(document.getElementById('bulk')||{}).value||'';var only=(document.getElementById('bulkonly')||{}).checked;ui.bulkOnly=only;
     var R={upd:[],add:[],skip:[],same:0,seen:[],fz:[],tc:[]};
@@ -1090,6 +1160,12 @@ root.addEventListener('click',function(ev){
 function ev_(id){return ev(id)}
 function showText(t){var w=document.createElement('div');w.className='toast';w.style.cssText+='left:16px;max-width:520px;margin-left:auto';w.innerHTML='<div class="row" style="margin-bottom:6px"><b class="grow">Copy manually</b><button class="btn sm">Close</button></div><textarea style="min-height:220px">'+esc(t)+'</textarea>';document.body.appendChild(w);w.querySelector('button').onclick=function(){w.remove()};var ta=w.querySelector('textarea');ta.focus();ta.select()}
 
+root.addEventListener('change',function(ev){var t=ev.target;if(!t.hasAttribute)return;
+  if(t.hasAttribute('data-shotfile')){if(isLocked())return;processShots(t.files);t.value='';return}
+  var f=t.getAttribute('data-shot-f');if(!f||!ui.shot)return;var r=ui.shot.rows[+t.getAttribute('data-i')];if(!r)return;
+  if(f==='on')r.on=t.checked;else if(f==='mid'){r.mid=t.value;r.on=t.value!=='skip';var m=member(r.mid);r.sure=true;r.warn=m&&m.power&&r.power&&(r.power/m.power<0.6||r.power/m.power>1.6)?'Power looks very different from '+fmt(m.power)+' — check the number':'';render()}
+  else if(f==='power'){var p=parsePower(t.value);if(p>0){r.power=p;var m2=member(r.mid);r.warn=m2&&(p/m2.power<0.6||p/m2.power>1.6)?'Power looks very different from '+fmt(m2.power)+' — check the number':'';r.on=true;render()}}
+  else if(f==='tc')r.tc=parseTcInput(t.value);else if(f==='newName')r.newName=t.value});
 root.addEventListener('toggle',function(ev){if(ev.target.hasAttribute&&ev.target.hasAttribute('data-cfg'))ui.openCfg=ev.target.open;if(ev.target.hasAttribute&&ev.target.hasAttribute('data-bulk'))ui.bulkOpen=ev.target.open},true);
 root.addEventListener('keydown',function(ev){var t=ev.target;if(ev.key==='Enter'&&t.getAttribute&&t.getAttribute('data-mf')==='power'){ev.preventDefault();var all=[].slice.call(root.querySelectorAll('input[data-mf=power]'));var nx=all[all.indexOf(t)+1];ui.focusNext=nx?nx.getAttribute('data-id'):null;t.blur();if(ui.focusNext){var el=root.querySelector('input[data-mf=power][data-id="'+ui.focusNext+'"]');if(el){el.focus();el.select()}ui.focusNext=null}}});
 root.addEventListener('input',function(ev){var t=ev.target;if(t.getAttribute('data-f')==='search'){ui.search=t.value;render()}});
@@ -1101,7 +1177,7 @@ root.addEventListener('change',function(ev){
   if(mf){var m=member(t.getAttribute('data-id'));if(!m)return;
     if(mf==='name'){var v=t.value.trim();if(v)m.name=v}
     else if(mf==='power')setPower(m,parsePower(t.value));
-    else if(mf==='tc'){var v2=parseInt(t.value,10);m.tc=v2>0?v2:undefined}
+    else if(mf==='tc'){m.tc=parseTcInput(t.value)}
     else if(mf==='active')m.active=t.checked;
     else if(mf==='legion')m.legion=t.checked?t.getAttribute('data-v'):'';
     return touch()}
