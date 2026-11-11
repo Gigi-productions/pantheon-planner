@@ -618,7 +618,7 @@ function viewSignup(){
   ms.forEach(function(m){h+='<option value="'+m.id+'"'+(ui.suSel===m.id?' selected':'')+'>'+esc(m.name)+'</option>'});
   h+='<option value="__new"'+(ui.suSel==='__new'?' selected':'')+'>➕ I’m not in the list</option></select></label>';
   if(ui.suSel==='__new')h+='<label class="f" style="margin-bottom:10px">Your in-game name<input type="text" data-sufield="typed" maxlength="40" value="'+esc(ui.suTyped||'')+'" style="width:100%;font-size:15px" placeholder="exactly as in the game"></label>';
-  h+='<label class="f" style="margin-bottom:10px"><span>2. Event <span class="su-req">required</span></span>';
+  h+='<label class="f" style="margin-bottom:10px"><span>2. Event <span class="su-req">required</span> <span class="muted" style="font-weight:400">— tap the box below and pick the event you want to answer'+(evs.length>1?' ('+evs.length+' events to choose from)':'')+'</span></span>';
   if(!evs.length)h+='<div class="su-when"><span class="muted">No events planned yet — the R4s will add them soon.</span>'+(r4?' · <a href="#events" style="color:var(--gold2)">plan one on the Events tab</a>':'')+'</div></label>';
   else{h+='<select data-sufield="ev" style="width:100%;font-size:15px">';evs.forEach(function(e){var a=myAns(e);h+='<option value="'+e.id+'"'+(e.id===ui.suEv?' selected':'')+'>'+esc(evOptionLabel(e))+(a?'  ·  '+ANS[a].split(' ')[0]:'')+'</option>'});h+='</select></label>';}
   if(E){var a=myAns(E);
@@ -684,6 +684,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.16',date:'2026-11-11',title:'Clearer event choice',items:['The sign-up page now says to pick the event from the dropdown, and how many events there are to choose from.']},
  {v:'2.15',date:'2026-11-11',title:'Sign up per event',items:['The sign-up page now has an event dropdown: pick an event and its answer buttons appear right under it.','Only events made on the Events tab can be chosen, and an event disappears from the sign-up page 1 hour after it starts.','Under the form, every open event shows how many people signed up and who. That section empties itself once the event has passed — the answers are not deleted.','R4s accept sign-ups with ✓ (or Accept all): the player goes straight into the event they answered, or is taken out when they can’t join. Changed answers come back to be accepted again.','The legion boxes next to the names in the member list are gone: who joins which event now comes from the Sign-up page.']},
  {v:'2.14',date:'2026-11-10',title:'Visitors counted every day',items:['The visitor count now counts someone again on every day they open the app, also in the all-time total.']},
  {v:'2.13',date:'2026-11-10',title:'Visitor count · Settings for R4s only',items:['Settings now shows how many people opened the app: visitors today, last 7 days and all time, with a small chart per day.','The Settings tab is now only visible for logged-in R4s.']},
