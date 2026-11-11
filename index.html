@@ -612,7 +612,8 @@ function loadMp(){
 function saveMp(c){ui.mp=c;if(CLOUD){if(!cloud.F||!cloud.user){toast('Log in as R4 first');return}cloud.F.setDoc(cloud.F.doc(cloud.db,'private','mightpulse'),c).then(function(){toast('✅ MightPulse settings saved');safeRender()},function(e){toast('Could not save ('+((e&&e.code)||'error')+')'+(e&&e.code==='permission-denied'?' — paste the new Firestore rules first':''))})}else{lsSet('ks-mightpulse',JSON.stringify(c));toast('✅ MightPulse settings saved on this device')}}
 function findRoster(o,depth){if(!o||typeof o!=='object'||depth>5)return null;if(Array.isArray(o)){if(o.length&&o[0]&&typeof o[0]==='object'&&('nick_name' in o[0]||'governor_id' in o[0])&&'power' in o[0])return o;for(var i=0;i<o.length;i++){var r=findRoster(o[i],depth+1);if(r)return r}return null}
   var keys=['roster','members','members_base','data','alliance','items'];for(var k=0;k<keys.length;k++)if(o[keys[k]]){var r2=findRoster(o[keys[k]],depth+1);if(r2)return r2}for(var kk in o){var r3=findRoster(o[kk],depth+1);if(r3)return r3}return null}
-function mpTc(v){if(v==null||v==='')return null;var g=String(v).match(/tg\s*(\d+)/i);if(g)return 30+(+g[1]);var n=parseInt(v,10);return n>0&&n<=40?n:null}
+/* MightPulse town_center_level: 1-30 = TC1-30, 31-34 = TC30 steps, 35 = TG1, 40 = TG2, 45 = TG3 … (every 5 levels one Truegold level) */
+function mpTc(v){if(v==null||v==='')return null;var g=String(v).match(/tg\s*(\d+)/i);if(g)return 30+(+g[1]);var n=parseInt(v,10);if(!(n>0))return null;if(n<=30)return n;if(n<35)return 30;return Math.min(40,30+Math.floor((n-30)/5))}
 function mpBase(b){b=String(b||MP_DEF.base).trim().replace(/\s+/g,'');if(!/^https?:\/\//i.test(b))b='https://'+b;var i=b.indexOf('/v1');if(i>=0)return b.slice(0,i+3);return b.replace(/\/+$/,'')+'/v1'}
 function mpSync(){
   var c=mpCfg();if(!c.key){toast('Add your MightPulse API key in Settings first');go('instellingen');return}
@@ -641,8 +642,8 @@ function mpGet(path){var c=mpCfg();if(!c.key)return Promise.reject(new Error('Ad
   return go(0).catch(function(e){if(/fetch|network|load failed/i.test(e.message||''))throw new Error('Could not reach MightPulse — check the relay in Settings');throw e})}
 function findInfo(o,d){if(!o||typeof o!=='object'||d>4)return null;if(!Array.isArray(o)&&('power_rank' in o||('abbr' in o&&'power' in o)))return o;for(var k in o){if(Array.isArray(o[k]))continue;var r=findInfo(o[k],d+1);if(r)return r}return null}
 function snapFrom(data){var R=findRoster(data,0)||[],I=findInfo(data,0)||{},c=mpCfg();
-  return {ts:Date.now(),kid:String(c.kid),tag:c.tag,info:{power:+I.power||0,count:+I.count||R.length,rank:I.power_rank!=null?+I.power_rank:null,name:I.name||''},
-    m:R.map(function(x){return {g:String(x.governor_id||x.fid||x.uid||''),n:String(x.nick_name||x.name||''),p:+x.power||0,t:mpTc(x.town_center_level),k:+x.kills||0,r:x.alliance_rank_label||''}})}}
+  return {v:2,ts:Date.now(),kid:String(c.kid),tag:c.tag,info:{power:+I.power||0,count:+I.count||R.length,rank:I.power_rank!=null?+I.power_rank:null,name:I.name||''},
+    m:R.map(function(x){return {g:String(x.governor_id||x.fid||x.uid||''),n:String(x.nick_name||x.name||''),p:+x.power||0,t:mpTc(x.town_center_level),tl:+x.town_center_level||0,k:+x.kills||0,r:x.alliance_rank_label||''}})}}
 function saveSnap(sn){var id=dayKey();if(!sn.m.length)return;ui.snaps=ui.snaps||{};ui.snaps[id]=sn;
   if(CLOUD&&cloud.F&&cloud.user)cloud.F.setDoc(cloud.F.doc(cloud.db,'mpsnap',id),sn).catch(function(e){toast('Snapshot not saved ('+((e&&e.code)||'error')+') — paste the new Firestore rules')});
   else if(!CLOUD){var all={};try{all=JSON.parse(lsGet('ks-mpsnap')||'{}')}catch(e){}all[id]=sn;var ks=Object.keys(all).sort();while(ks.length>60)delete all[ks.shift()];lsSet('ks-mpsnap',JSON.stringify(all))}}
@@ -667,7 +668,7 @@ function viewInsights(){
    +'<div class="row" style="gap:6px">'+tabs.map(function(t){return '<button class="btn sm'+(T===t[0]?' gold':'')+'" data-allow data-ins="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div></div>';
   if(ui.snapErr)h+='<div class="hint">Can’t read the saved data ('+esc(ui.snapErr)+') — paste the new Firestore rules (with <b>mpsnap</b>).</div>';
   if(!now&&T!=='player'&&T!=='kingdom')return h+'<div class="empty">No data yet.'+(r4?' Click <b>🔄 Refresh data</b> (needs your MightPulse key in Settings).':' An R4 has to fetch it first.')+'</div>';
-  if(T==='overview'){var m=now.m,tot=m.reduce(function(a,x){return a+x.p},0),w=snapAt(7),wt=w?w.m.reduce(function(a,x){return a+x.p},0):0,tcs={};m.forEach(function(x){var k=x.t?tcLbl(x.t):'?';tcs[k]=(tcs[k]||0)+1});
+  if(T==='overview'){var m=now.m,tot=m.reduce(function(a,x){return a+x.p},0),w=snapAt(7),wt=w?w.m.reduce(function(a,x){return a+x.p},0):0,tcs={};m.forEach(function(x){var tv=now.v===2?x.t:mpTc(x.t),k=tv?tcLbl(tv):'?';tcs[k]=(tcs[k]||0)+1});
     h+='<div class="stats"><div class="stat"><b>'+fmt(now.info.power||tot)+'</b><span>Alliance power'+(w?' <span style="color:'+(tot>=wt?'var(--green)':'var(--red)')+'">'+(tot>=wt?'+':'−')+fmt(Math.abs(tot-wt))+' since '+agoTxt(w.ts)+'</span>':'')+'</span></div><div class="stat"><b>'+m.length+'</b><span>Members</span></div><div class="stat"><b>'+fmt(m.length?tot/m.length:0)+'</b><span>Average power</span></div><div class="stat"><b>'+(now.info.rank?'#'+now.info.rank:'–')+'</b><span>Power rank in kingdom '+esc(now.kid)+'</span></div></div>';
     h+='<div class="card"><h2>Town Center levels</h2><div class="row" style="gap:8px">'+Object.keys(tcs).sort(function(a,b){var f=function(x){return x==='?'?-1:x.indexOf('TG')===0?30+(+x.slice(2)):+x.slice(2)};return f(b)-f(a)}).map(function(k){return '<span class="chip"><b>'+k+'</b> × '+tcs[k]+'</span>'}).join('')+'</div></div>';
     var top=m.slice().sort(function(a,b){return b.p-a.p}).slice(0,10);h+='<div class="card"><h2>Top 10 power</h2>'+top.map(function(x,i){return '<div class="row small" style="gap:8px;margin-bottom:4px"><span class="muted" style="width:20px">'+(i+1)+'</span><span class="grow">'+esc(x.n)+'</span><b>'+fmt(x.p)+'</b></div>'}).join('')+'</div>';}
@@ -720,7 +721,7 @@ function shotHtml(){var S=ui.shot;if(!S)return '';
   return h+'</div>'}
 function tcLbl(tc){return tc>30?'TG'+(tc-30):'TC'+tc}
 function tcOptions(cur,blank){var h='<option value=""'+(cur?'':' selected')+'>'+(blank||'–')+'</option>';
-  for(var g=10;g>=1;g--)h+='<option value="TG'+g+'"'+(cur===30+g?' selected':'')+'>TG'+g+'</option>';
+  for(var g=8;g>=1;g--)h+='<option value="TG'+g+'"'+(cur===30+g?' selected':'')+'>TG'+g+'</option>';
   for(var t=30;t>=1;t--)h+='<option value="'+t+'"'+(cur===t?' selected':'')+'>'+(blank?'TC ':'')+t+'</option>';return h}
 function tcIn(tc){return tc>30?'TG'+(tc-30):(tc||'')}
 function parseTcInput(v){v=String(v||'').trim();var g=v.match(/^tg\s*(\d{1,2})$/i);if(g)return 30+(+g[1]);var n=parseInt(v.replace(/^(tc|lv\.?)\s*/i,''),10);return n>0&&n<=30?n:undefined}
@@ -969,6 +970,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.27',date:'2026-11-11',title:'Correct TC levels from MightPulse',items:['MightPulse counts 5 steps per Truegold level (35 = TG1, 40 = TG2, 45 = TG3). The sync now converts this correctly — run 🔄 Sync from MightPulse once to fix levels that showed as TG10.']},
  {v:'2.26',date:'2026-11-11',title:'Simpler member updates',items:['The Members tab now uses only 🔄 Sync from MightPulse to update power, TC levels and names. The Kingshot Oracle buttons and the screenshot import are removed.']},
  {v:'2.25',date:'2026-11-11',title:'📊 Insights tab',items:['New tab with MightPulse data: overview (alliance power, kingdom rank, TC levels, top 10), power growth and kills compared with yesterday / 7 / 30 days ago, a roster check against the planner, and for R4s a player and kingdom lookup.','Switch it on in Settings → MightPulse: off, R4s only, or everyone. Every refresh or sync saves a daily snapshot so growth can be tracked.']},
  {v:'2.24',date:'2026-11-11',title:'Sync from MightPulse',items:['New on the Members tab: 🔄 Sync from MightPulse. It fetches the names, power and TC levels of [THE] in kingdom 2342 and shows them in a check-and-apply list.','After the first sync members are linked by their in-game ID, so name changes are picked up automatically. Members who are no longer in the alliance are listed and can be set inactive.','Set it up in Settings → MightPulse with your free API key (only R4s can read it).']},
