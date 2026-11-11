@@ -255,7 +255,7 @@ if(CLOUD){
   seed=JSON.parse(JSON.stringify(embedded));
   var CKEY='ksplanner-cloud:'+FIREBASE_CONFIG.projectId;
   var cached=lsGet(CKEY);
-  state=cached?{alliance:cached.alliance||'',oracleUrl:cached.oracleUrl||'',oracleCmd:cached.oracleCmd||'',shareUrl:cached.shareUrl||'',members:cached.members||[],events:cached.events||[]}:JSON.parse(JSON.stringify(embedded));
+  state=cached?{mpTab:cached.mpTab||'',alliance:cached.alliance||'',oracleUrl:cached.oracleUrl||'',oracleCmd:cached.oracleCmd||'',shareUrl:cached.shareUrl||'',members:cached.members||[],events:cached.events||[]}:JSON.parse(JSON.stringify(embedded));
   delete state.lock;
 }
 state.members=state.members||[];state.events=state.events||[];
@@ -282,7 +282,7 @@ function persist(){if(CLOUD){syncNow();saveCloudCache();return}state.rev=Date.no
 
 /* ---------- cloud (Firebase) ---------- */
 function stable(o){if(Array.isArray(o))return '['+o.map(stable).join(',')+']';if(o&&typeof o==='object'){return '{'+Object.keys(o).filter(function(k){return o[k]!==undefined}).sort().map(function(k){return JSON.stringify(k)+':'+stable(o[k])}).join(',')+'}'}return JSON.stringify(o===undefined?null:o)}
-function settingsObj(){return {alliance:state.alliance||'',oracleUrl:state.oracleUrl||'',oracleCmd:state.oracleCmd||'',shareUrl:state.shareUrl||''}}
+function settingsObj(){return {alliance:state.alliance||'',oracleUrl:state.oracleUrl||'',oracleCmd:state.oracleCmd||'',shareUrl:state.shareUrl||'',mpTab:state.mpTab||''}}
 function saveCloudCache(){if(CLOUD){var o=settingsObj();o.members=state.members;o.events=state.events;lsSet(CKEY,o)}}
 function isEditing(){var a=document.activeElement;return !!(a&&root.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.type!=='checkbox'&&!a.closest('.modal'))}
 function safeRender(){if(isEditing()){cloud.renderPending=true;return}render()}
@@ -297,7 +297,7 @@ function applyRemote(kind,arr){
   arr.forEach(function(o){cloud.synced[kind][o.id]=stable(o)});
   state[kind]=arr;checkReady();saveCloudCache();safeRender();
 }
-function applySettings(d){cloud.loaded.settings=true;cloud.hasSettings=!!d;if(d){state.alliance=d.alliance||'';state.oracleUrl=d.oracleUrl||'';state.oracleCmd=d.oracleCmd||'';state.shareUrl=d.shareUrl||''}cloud.synced.settings=d?stable(settingsObj()):null;checkReady();saveCloudCache();safeRender()}
+function applySettings(d){cloud.loaded.settings=true;cloud.hasSettings=!!d;if(d){state.alliance=d.alliance||'';state.oracleUrl=d.oracleUrl||'';state.oracleCmd=d.oracleCmd||'';state.shareUrl=d.shareUrl||'';state.mpTab=d.mpTab||''}cloud.synced.settings=d?stable(settingsObj()):null;checkReady();saveCloudCache();safeRender()}
 function checkReady(){if(cloud.loaded.members&&cloud.loaded.events&&cloud.loaded.settings){cloud.ready=true;cloud.status='live';cloud.empty=!state.members.length&&!state.events.length&&!cloud.hasSettings}}
 function syncNow(){
   if(!CLOUD||!cloud.ready||!cloud.user||!cloud.F)return;
@@ -445,10 +445,11 @@ function render(){
   var ro=isLocked();
   var h='<div class="app'+(ro?' ro':'')+'">';
   h+='<header class="top"><svg class="logo" viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6dc95"/><stop offset="1" stop-color="#b8862f"/></linearGradient></defs><g fill="url(#lg)"><ellipse cx="18.2" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-45 18.2 10.0)"/><ellipse cx="13.1" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-65 13.1 13.0)"/><ellipse cx="9.3" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-85 9.3 17.5)"/><ellipse cx="7.3" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-105 7.3 23.0)"/><ellipse cx="7.3" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-125 7.3 29.0)"/><ellipse cx="9.3" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-145 9.3 34.5)"/><ellipse cx="13.1" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-165 13.1 39.0)"/><ellipse cx="29.8" cy="10.0" rx="2.4" ry="5.2" transform="rotate(-135 29.8 10.0)"/><ellipse cx="34.9" cy="13.0" rx="2.4" ry="5.2" transform="rotate(-115 34.9 13.0)"/><ellipse cx="38.7" cy="17.5" rx="2.4" ry="5.2" transform="rotate(-95 38.7 17.5)"/><ellipse cx="40.7" cy="23.0" rx="2.4" ry="5.2" transform="rotate(-75 40.7 23.0)"/><ellipse cx="40.7" cy="29.0" rx="2.4" ry="5.2" transform="rotate(-55 40.7 29.0)"/><ellipse cx="38.7" cy="34.5" rx="2.4" ry="5.2" transform="rotate(-35 38.7 34.5)"/><ellipse cx="34.9" cy="39.0" rx="2.4" ry="5.2" transform="rotate(-15 34.9 39.0)"/></g><path d="M26.5 9 L17 27 h6.5 L20 40 L31.5 20.5 H25 L28.5 9 Z" fill="url(#lg)" stroke="#0a0d14" stroke-width=".8"/></svg><div class="title"><h1>'+(state.alliance?esc(state.alliance):'Alliance Planner')+'</h1><small>Kingshot · members, power &amp; event groups · Made by Gigi</small></div>';
-  h+='<nav class="tabs"><a href="#leden" class="'+(r.tab==='leden'?'on':'')+'">Members</a><a href="#events" class="'+(r.tab==='events'?'on':'')+'">Events</a>'+(CLOUD?'<a href="#signup" class="'+(r.tab==='signup'||r.tab==='sheet'?'on':'')+'">Sign-up'+(cloud.user&&(cloud.signups||[]).filter(suNeedsAction).length?' <span class="navbadge">'+(cloud.signups||[]).filter(suNeedsAction).length+'</span>':'')+'</a>':'')+(ro?'':'<a href="#instellingen" class="'+(r.tab==='instellingen'?'on':'')+'">Settings</a>')+(CLOUD?(cloud.user?'<button class="btn sm" data-act="logout" title="Log out">🔓 '+esc(r4Name(cloud.user)||'R4')+' · Log out</button>':'<button class="btn sm gold" data-act="login">🔒 R4 login</button>'):state.lock?(ro?'<button class="btn sm gold" data-act="login">🔒 R4 login</button>':'<button class="btn sm" data-act="lockme" title="Lock editing again">🔓 R4 · Lock</button>'):'')+(installEvt&&!isStandalone?'<button class="btn sm" data-allow="install">📲 Install app</button>':'')+'</nav></header>';
+  h+='<nav class="tabs"><a href="#leden" class="'+(r.tab==='leden'?'on':'')+'">Members</a><a href="#events" class="'+(r.tab==='events'?'on':'')+'">Events</a>'+(CLOUD?'<a href="#signup" class="'+(r.tab==='signup'||r.tab==='sheet'?'on':'')+'">Sign-up'+(cloud.user&&(cloud.signups||[]).filter(suNeedsAction).length?' <span class="navbadge">'+(cloud.signups||[]).filter(suNeedsAction).length+'</span>':'')+'</a>':'')+(state.mpTab==='all'||(state.mpTab==='r4'&&!ro)?'<a href="#insights" class="'+(r.tab==='insights'?'on':'')+'">📊 Insights</a>':'')+(ro?'':'<a href="#instellingen" class="'+(r.tab==='instellingen'?'on':'')+'">Settings</a>')+(CLOUD?(cloud.user?'<button class="btn sm" data-act="logout" title="Log out">🔓 '+esc(r4Name(cloud.user)||'R4')+' · Log out</button>':'<button class="btn sm gold" data-act="login">🔒 R4 login</button>'):state.lock?(ro?'<button class="btn sm gold" data-act="login">🔒 R4 login</button>':'<button class="btn sm" data-act="lockme" title="Lock editing again">🔓 R4 · Lock</button>'):'')+(installEvt&&!isStandalone?'<button class="btn sm" data-allow="install">📲 Install app</button>':'')+'</nav></header>';
   h+=whatsNewBanner();
   if(r.tab==='events')h+=viewEvents(r.ev);
   else if(r.tab==='instellingen')h+=ro?'<div class="card"><h2>🔒 Settings</h2><p class="muted" style="margin:0 0 12px">Settings are only for R4s.</p><button class="btn gold" data-act="login">🔒 R4 login</button></div>':viewSettings();
+  else if(r.tab==='insights')h+=(state.mpTab==='all'||(state.mpTab==='r4'&&!ro))?viewInsights():'<div class="empty">This tab is switched off.</div>';
   else if(r.tab==='signup'||r.tab==='sheet')h+=viewSignup();
   else if(r.tab==='whatsnew')h+=viewWhatsNew();
   else h+=viewMembers();
@@ -621,7 +622,7 @@ function mpSync(){
       if(res.status===202&&n<3){var ra=Math.min(30,+res.headers.get('Retry-After')||5);ui.shot.msg='MightPulse is refreshing the data — trying again in '+ra+'s…';render();return new Promise(function(r){setTimeout(r,ra*1000)}).then(function(){return attempt(n+1)})}
       if(!res.ok){var m=res.status===401?'API key not accepted — check it in Settings':res.status===404?'Alliance '+c.tag+' not found in kingdom '+c.kid+' (the tag is case-sensitive)':res.status===429?'Too many requests — wait a minute and try again':res.status===403?(/workers\.dev/.test(url)?'The relay refused the request — check the planner address in the relay code':'This needs a Mighty (paid) key'):'MightPulse error '+res.status;throw new Error(m)}
       return res.json()})};
-  attempt(0).then(function(data){var R=findRoster(data,0)||[];
+  attempt(0).then(function(data){var R=findRoster(data,0)||[];try{saveSnap(snapFrom(data))}catch(e){}
     var rows=R.map(function(x){return {name:String(x.nick_name||x.name||'').trim(),power:+x.power||0,tc:mpTc(x.town_center_level!=null?x.town_center_level:x.tc),gid:String(x.governor_id||x.fid||x.uid||''),rank:x.alliance_rank_label||''}}).filter(function(r){return r.name||r.gid});
     if(!rows.length){ui.shot=null;toast('MightPulse returned no members for '+c.tag);return render()}
     rows.forEach(function(r){var m=r.gid&&state.members.filter(function(x){return x.gid===r.gid})[0];if(m){r.mid=m.id;r.sure=true}});
@@ -631,6 +632,65 @@ function mpSync(){
     var left=state.members.filter(function(m){return m.active!==false&&!hit[m.id]}).map(function(m){return m.id});
     ui.shot={busy:false,src:'mp',rows:rows.sort(function(a,b){return b.power-a.power}),left:left};render()})
   .catch(function(e){ui.shot=null;var msg=(e&&e.message)||'error';if(/fetch|network|load failed/i.test(msg))msg='Your browser could not reach MightPulse (it may block apps calling it directly). See Settings → MightPulse for the relay option.';toast(msg);render()});
+}
+/* ---------- Insights (MightPulse data) ---------- */
+function mpGet(path){var c=mpCfg();if(!c.key)return Promise.reject(new Error('Add your MightPulse API key in Settings first'));
+  var url=mpBase(c.base)+path,go=function(n){return fetch(url,{headers:{'Authorization':'Bearer '+c.key,'Accept':'application/json'}}).then(function(res){
+    if(res.status===202&&n<3){var ra=Math.min(30,+res.headers.get('Retry-After')||5);return new Promise(function(r){setTimeout(r,ra*1000)}).then(function(){return go(n+1)})}
+    if(!res.ok)throw new Error(res.status===401?'API key not accepted':res.status===404?'Not found on MightPulse':res.status===429?'Too many requests — wait a minute':res.status===403?'Not allowed (Mighty key or relay settings)':'MightPulse error '+res.status);return res.json()})};
+  return go(0).catch(function(e){if(/fetch|network|load failed/i.test(e.message||''))throw new Error('Could not reach MightPulse — check the relay in Settings');throw e})}
+function findInfo(o,d){if(!o||typeof o!=='object'||d>4)return null;if(!Array.isArray(o)&&('power_rank' in o||('abbr' in o&&'power' in o)))return o;for(var k in o){if(Array.isArray(o[k]))continue;var r=findInfo(o[k],d+1);if(r)return r}return null}
+function snapFrom(data){var R=findRoster(data,0)||[],I=findInfo(data,0)||{},c=mpCfg();
+  return {ts:Date.now(),kid:String(c.kid),tag:c.tag,info:{power:+I.power||0,count:+I.count||R.length,rank:I.power_rank!=null?+I.power_rank:null,name:I.name||''},
+    m:R.map(function(x){return {g:String(x.governor_id||x.fid||x.uid||''),n:String(x.nick_name||x.name||''),p:+x.power||0,t:mpTc(x.town_center_level),k:+x.kills||0,r:x.alliance_rank_label||''}})}}
+function saveSnap(sn){var id=dayKey();if(!sn.m.length)return;ui.snaps=ui.snaps||{};ui.snaps[id]=sn;
+  if(CLOUD&&cloud.F&&cloud.user)cloud.F.setDoc(cloud.F.doc(cloud.db,'mpsnap',id),sn).catch(function(e){toast('Snapshot not saved ('+((e&&e.code)||'error')+') — paste the new Firestore rules')});
+  else if(!CLOUD){var all={};try{all=JSON.parse(lsGet('ks-mpsnap')||'{}')}catch(e){}all[id]=sn;var ks=Object.keys(all).sort();while(ks.length>60)delete all[ks.shift()];lsSet('ks-mpsnap',JSON.stringify(all))}}
+function loadSnaps(){if(ui.snapSub)return;ui.snapSub=true;ui.snaps=ui.snaps||{};
+  if(CLOUD&&cloud.F){cloud.F.onSnapshot(cloud.F.collection(cloud.db,'mpsnap'),function(snap){var o={};snap.forEach(function(d){o[d.id]=d.data()});ui.snaps=o;safeRender()},function(e){ui.snapErr=(e&&e.code)||'error';safeRender()})}
+  else{try{ui.snaps=JSON.parse(lsGet('ks-mpsnap')||'{}')}catch(e){ui.snaps={}}}}
+function snapAt(daysAgo){var ks=Object.keys(ui.snaps||{}).sort();if(!ks.length)return null;if(daysAgo===0)return ui.snaps[ks[ks.length-1]];
+  var t=Date.now()-daysAgo*864e5,best=null,bd=1e18;ks.forEach(function(k){var sn=ui.snaps[k],d=Math.abs(sn.ts-t);if(d<bd&&sn!==ui.snaps[ks[ks.length-1]]){bd=d;best=sn}});return best}
+function insRefresh(){var c=mpCfg();ui.insBusy=true;render();
+  mpGet('/alliances/'+encodeURIComponent(c.kid)+'/'+encodeURIComponent(c.tag)+'?include=info,roster').then(function(d){var sn=snapFrom(d);saveSnap(sn);ui.insBusy=false;toast('✅ Fresh data for '+sn.m.length+' members');render()},function(e){ui.insBusy=false;toast(e.message);render()})}
+function genTable(arr){if(!arr||!arr.length)return '<p class="muted small">Nothing.</p>';var keys=[];arr.slice(0,20).forEach(function(o){Object.keys(o).forEach(function(k){var v=o[k];if(keys.indexOf(k)<0&&(typeof v!=='object'||v===null)&&!/url|avatar|uid|fid|_at$|endtime/i.test(k))keys.push(k)})});
+  var pri=['rank','name','nick_name','abbr','alliance','power','value','score','kills','town_center_level','kid'];keys.sort(function(a,b){var x=pri.indexOf(a),y=pri.indexOf(b);return (x<0?99:x)-(y<0?99:y)});keys=keys.slice(0,6);
+  return '<div style="overflow-x:auto"><table><thead><tr>'+keys.map(function(k){return '<th>'+esc(k.replace(/_/g,' '))+'</th>'}).join('')+'</tr></thead><tbody>'+arr.slice(0,100).map(function(o){return '<tr>'+keys.map(function(k){var v=o[k];return '<td'+(typeof v==='number'?' class="num"':'')+'>'+(typeof v==='number'&&v>=1e5?fmt(v):esc(v==null?'':String(v)))+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>'}
+function genObj(o){if(!o||typeof o!=='object')return '';var rows=[],arrs=[];Object.keys(o).forEach(function(k){var v=o[k];if(v==null||/url|avatar/i.test(k))return;if(Array.isArray(v)){if(v.length&&typeof v[0]==='object')arrs.push([k,v])}else if(typeof v==='object'){if(k==='alliance'||k==='base')rows.push([k,v.abbr||v.name||v.nick_name||JSON.stringify(v).slice(0,60)]);else Object.keys(v).forEach(function(k2){var v2=v[k2];if(typeof v2!=='object'&&!/url|avatar/i.test(k2))rows.push([k+' · '+k2,v2])})}else rows.push([k,v])});
+  var h='<table>'+rows.map(function(r){var v=r[1];if(/town_center_level/.test(r[0])&&mpTc(v))v=tcLbl(mpTc(v));return '<tr><td class="muted">'+esc(String(r[0]).replace(/_/g,' '))+'</td><td>'+(typeof v==='number'&&v>=1e5?fmt(v):esc(String(v)))+'</td></tr>'}).join('')+'</table>';
+  arrs.forEach(function(a){var sub=Object.keys(a[1][0]).filter(function(k){return Array.isArray(a[1][0][k])})[0];h+='<h3 style="margin:12px 0 6px">'+esc(a[0].replace(/_/g,' '))+'</h3>';
+    if(sub)a[1].forEach(function(it){h+='<div class="small" style="margin:8px 0 4px;color:var(--gold2)">'+esc(it.name||it.title||it.board||it.slug||'')+'</div>'+genTable(it[sub])});else h+=genTable(a[1])});return h}
+function viewInsights(){
+  loadSnaps();var r4=!isLocked()&&(!CLOUD||cloud.user),T=ui.insTab||'overview',now=snapAt(0),c=mpCfg();if(r4&&!ui.mp&&!ui.mpLoading)setTimeout(loadMp,0);
+  var tabs=[['overview','Overview'],['growth','Power growth'],['kills','Kills'],['check','Roster check']].concat(r4?[['player','Player lookup'],['kingdom','Kingdom']]:[]);
+  var h='<div class="card"><div class="row" style="margin-bottom:6px"><h2 class="grow" style="margin:0">📊 Insights <span class="muted small" style="font-family:Inter">from MightPulse'+(now?' · updated '+agoTxt(now.ts)+' '+new Date(now.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):'')+'</span></h2>'+(r4?'<button class="btn gold sm" data-act="insrefresh"'+(ui.insBusy?' disabled':'')+'>'+(ui.insBusy?'⏳ Fetching…':'🔄 Refresh data')+'</button>':'')+'</div>'
+   +'<div class="row" style="gap:6px">'+tabs.map(function(t){return '<button class="btn sm'+(T===t[0]?' gold':'')+'" data-allow data-ins="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div></div>';
+  if(ui.snapErr)h+='<div class="hint">Can’t read the saved data ('+esc(ui.snapErr)+') — paste the new Firestore rules (with <b>mpsnap</b>).</div>';
+  if(!now&&T!=='player'&&T!=='kingdom')return h+'<div class="empty">No data yet.'+(r4?' Click <b>🔄 Refresh data</b> (needs your MightPulse key in Settings).':' An R4 has to fetch it first.')+'</div>';
+  if(T==='overview'){var m=now.m,tot=m.reduce(function(a,x){return a+x.p},0),w=snapAt(7),wt=w?w.m.reduce(function(a,x){return a+x.p},0):0,tcs={};m.forEach(function(x){var k=x.t?tcLbl(x.t):'?';tcs[k]=(tcs[k]||0)+1});
+    h+='<div class="stats"><div class="stat"><b>'+fmt(now.info.power||tot)+'</b><span>Alliance power'+(w?' <span style="color:'+(tot>=wt?'var(--green)':'var(--red)')+'">'+(tot>=wt?'+':'−')+fmt(Math.abs(tot-wt))+' since '+agoTxt(w.ts)+'</span>':'')+'</span></div><div class="stat"><b>'+m.length+'</b><span>Members</span></div><div class="stat"><b>'+fmt(m.length?tot/m.length:0)+'</b><span>Average power</span></div><div class="stat"><b>'+(now.info.rank?'#'+now.info.rank:'–')+'</b><span>Power rank in kingdom '+esc(now.kid)+'</span></div></div>';
+    h+='<div class="card"><h2>Town Center levels</h2><div class="row" style="gap:8px">'+Object.keys(tcs).sort(function(a,b){var f=function(x){return x==='?'?-1:x.indexOf('TG')===0?30+(+x.slice(2)):+x.slice(2)};return f(b)-f(a)}).map(function(k){return '<span class="chip"><b>'+k+'</b> × '+tcs[k]+'</span>'}).join('')+'</div></div>';
+    var top=m.slice().sort(function(a,b){return b.p-a.p}).slice(0,10);h+='<div class="card"><h2>Top 10 power</h2>'+top.map(function(x,i){return '<div class="row small" style="gap:8px;margin-bottom:4px"><span class="muted" style="width:20px">'+(i+1)+'</span><span class="grow">'+esc(x.n)+'</span><b>'+fmt(x.p)+'</b></div>'}).join('')+'</div>';}
+  if(T==='growth'||T==='kills'){var days=ui.insDays||7,old=snapAt(days),K=T==='kills'?'k':'p',om={};if(old)old.m.forEach(function(x){om[x.g]=x});
+    var rows=now.m.map(function(x){var o=om[x.g];return {x:x,d:o?x[K]-o[K]:null}}).sort(function(a,b){return (b.d==null?-1e18:b.d)-(a.d==null?-1e18:a.d)||b.x[K]-a.x[K]});
+    h+='<div class="card"><div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">'+(T==='kills'?'Kills':'Power growth')+'</h2><span class="muted small">compared with</span>'+[1,7,30].map(function(n){return '<button class="btn sm'+(days===n?' gold':'')+'" data-allow data-insdays="'+n+'">'+(n===1?'yesterday':n+' days ago')+'</button>'}).join('')+'</div>';
+    if(!old)h+='<p class="muted small">Not enough history yet. Every refresh saves a snapshot (one per day); come back after a few days to see the changes.</p>';
+    else h+='<p class="muted small" style="margin:0 0 8px">Compared with the data from '+new Date(old.ts).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})+'.'+(T==='growth'?' 😴 = no growth (maybe inactive).':'')+'</p>';
+    h+='<div style="overflow-x:auto"><table><thead><tr><th>#</th><th class="nm">Name</th><th class="num">'+(T==='kills'?'Kills':'Power')+'</th><th class="num">Change</th>'+(T==='growth'?'<th class="num">%</th>':'')+'</tr></thead><tbody>'+rows.map(function(r,i){var d=r.d,pct=d!=null&&r.x[K]-d>0?d/(r.x[K]-d)*100:null;
+      return '<tr><td class="muted">'+(i+1)+'</td><td class="nm sn">'+esc(r.x.n)+'</td><td class="num">'+fmt(r.x[K])+'</td><td class="num" style="color:'+(d>0?'var(--green)':d<0?'var(--red)':'var(--muted)')+'">'+(d==null?'new':d===0?(T==='growth'?'😴 0':'0'):(d>0?'+':'−')+fmt(Math.abs(d)))+'</td>'+(T==='growth'?'<td class="num small muted">'+(pct==null?'':(pct>=0?'+':'')+pct.toFixed(1)+'%')+'</td>':'')+'</tr>'}).join('')+'</tbody></table></div></div>';}
+  if(T==='check'){var byG={};state.members.forEach(function(x){if(x.gid)byG[x.gid]=x});var notIn=now.m.filter(function(x){return !byG[x.g]&&!state.members.some(function(y){return nameKey(y.name)===nameKey(x.n)})}),ids={};now.m.forEach(function(x){ids[x.g]=1});
+    var gone=state.members.filter(function(x){return x.active!==false&&x.gid&&!ids[x.gid]}),unl=state.members.filter(function(x){return x.active!==false&&!x.gid}),diff=now.m.filter(function(x){var y=byG[x.g];return y&&y.power&&Math.abs(y.power-x.p)/x.p>0.03});
+    var lst=function(a,f){return a.length?a.map(f).join(', '):'<span class="muted">none ✓</span>'};
+    h+='<div class="card"><h2>Roster check</h2><p class="small"><b>On MightPulse, not in the planner ('+notIn.length+'):</b> '+lst(notIn,function(x){return esc(x.n)+' <span class="muted">'+fmt(x.p)+'</span>'})+'</p>'
+     +'<p class="small"><b>In the planner, no longer in '+esc(now.tag)+' ('+gone.length+'):</b> '+lst(gone,function(x){return esc(x.name)})+'</p>'
+     +'<p class="small"><b>Power in the planner is outdated by more than 3% ('+diff.length+'):</b> '+lst(diff,function(x){return esc(x.n)+' <span class="muted">'+fmt(byG[x.g].power)+' → '+fmt(x.p)+'</span>'})+'</p>'
+     +'<p class="small"><b>Not linked to MightPulse yet ('+unl.length+'):</b> '+lst(unl,function(x){return esc(x.name)})+'</p>'+(r4?'<button class="btn sm gold" data-act="mpsync">🔄 Fix with Sync from MightPulse</button>':'')+'</div>';}
+  if(T==='player'){var opts=state.members.filter(function(x){return x.gid}).sort(function(a,b){return a.name.toLowerCase()<b.name.toLowerCase()?-1:1});
+    h+='<div class="card"><h2>Player lookup</h2><div class="row" style="gap:8px"><select id="insgsel"><option value="">— pick a member —</option>'+opts.map(function(x){return '<option value="'+esc(x.gid)+'">'+esc(x.name)+'</option>'}).join('')+'</select><span class="muted small">or governor ID</span><input type="text" id="insgid" inputmode="numeric" placeholder="e.g. 123456789" style="width:150px"><button class="btn gold sm" data-act="insplayer">Look up</button></div>';
+    if(ui.insP&&ui.insP.busy)h+='<p class="muted small">⏳ Looking up…</p>';else if(ui.insP&&ui.insP.data)h+='<div style="margin-top:10px">'+genObj(ui.insP.data.player||ui.insP.data.data||ui.insP.data)+'</div>';h+='</div>';}
+  if(T==='kingdom'){h+='<div class="card"><div class="row" style="margin-bottom:8px"><h2 class="grow" style="margin:0">Kingdom '+esc(c.kid)+'</h2><button class="btn sm gold" data-act="inskingdom">'+(ui.insK&&ui.insK.data?'↻ Reload':'Load')+'</button></div>';
+    if(ui.insK&&ui.insK.busy)h+='<p class="muted small">⏳ Loading…</p>';else if(ui.insK&&ui.insK.data)h+=genObj(ui.insK.data.kingdom||ui.insK.data);else h+='<p class="muted small">Kingdom stats and leaderboards from MightPulse.</p>';h+='</div>';}
+  return h;
 }
 function processShots(files){
   files=[].slice.call(files||[]).filter(function(f){return /^image\//.test(f.type)});if(!files.length)return;
@@ -909,6 +969,7 @@ function deleteSignups(ids,quiet){
 }
 /* ---------- what's new (add a new entry at the top for every update) ---------- */
 var CHANGELOG=[
+ {v:'2.25',date:'2026-11-11',title:'📊 Insights tab',items:['New tab with MightPulse data: overview (alliance power, kingdom rank, TC levels, top 10), power growth and kills compared with yesterday / 7 / 30 days ago, a roster check against the planner, and for R4s a player and kingdom lookup.','Switch it on in Settings → MightPulse: off, R4s only, or everyone. Every refresh or sync saves a daily snapshot so growth can be tracked.']},
  {v:'2.24',date:'2026-11-11',title:'Sync from MightPulse',items:['New on the Members tab: 🔄 Sync from MightPulse. It fetches the names, power and TC levels of [THE] in kingdom 2342 and shows them in a check-and-apply list.','After the first sync members are linked by their in-game ID, so name changes are picked up automatically. Members who are no longer in the alliance are listed and can be set inactive.','Set it up in Settings → MightPulse with your free API key (only R4s can read it).']},
  {v:'2.23',date:'2026-11-11',title:'Add members to an event from the member list',items:['R4s can tick several members on the Members tab and add them to an event in one go.','TC levels are picked from a dropdown on the Members tab and the sign-up page.']},
  {v:'2.22',date:'2026-11-11',title:'Check for doubles & name changes',items:['New R4 button on the Members tab: 🔍 Check doubles & name changes. It finds members that are in the list twice (same or very similar name) and possible name changes (a new name with the same power as an old one that stopped being updated).','Keep merges the two: you choose the name, the newest power, highest TC level, event spots and sign-ups are kept. Not the same hides the pair.']},
@@ -1223,6 +1284,9 @@ root.addEventListener('click',function(ev){
     if(k.indexOf('e:')===0){var id2=k.slice(2);state.events=state.events.filter(function(x){return x.id!==id2});persist();return go('events')}
     return touch();
   }
+  if(act==='insrefresh'){insRefresh();return}
+  if(act==='insplayer'){var gv=((root.querySelector('#insgid')||{}).value||'').trim()||((root.querySelector('#insgsel')||{}).value||'');if(!/^\d+$/.test(gv)){toast('Pick a member or type a governor ID');return}ui.insP={busy:true};render();mpGet('/players/'+gv+'?include=base,ranks').then(function(d){ui.insP={data:d};render()},function(e){ui.insP=null;toast(e.message);render()});return}
+  if(act==='inskingdom'){ui.insK={busy:true};render();mpGet('/kingdoms/'+encodeURIComponent(mpCfg().kid)+'?include=boards&limit=20').then(function(d){ui.insK={data:d};render()},function(e){ui.insK=null;toast(e.message);render()});return}
   if(act==='mpsync'){if(!ui.mp)loadMp();var wait=function(n){if(ui.mp||n>20)return mpSync();setTimeout(function(){wait(n+1)},150)};wait(0);return}
   if(act==='mpsave'){var fm=function(id){return ((root.querySelector('#'+id)||{}).value||'').trim()};var c={kid:fm('mpkid')||MP_DEF.kid,tag:fm('mptag')||MP_DEF.tag,base:mpBase(fm('mpbase')||MP_DEF.base),key:fm('mpkey')||(ui.mp&&ui.mp.key)||''};saveMp(c);return render()}
   if(act==='mptest'){mpSync();go('leden');return}
@@ -1362,6 +1426,7 @@ function mpSettingsHtml(){
   h+='<div class="row" style="gap:10px;align-items:flex-end"><label class="f">Kingdom<input type="text" id="mpkid" value="'+esc(c.kid)+'" style="width:90px"></label><label class="f">Alliance tag <span class="muted small">(exact capitals)</span><input type="text" id="mptag" value="'+esc(c.tag)+'" style="width:110px"></label>'
    +'<label class="f grow">API key '+(c.key?'<span class="small" style="color:var(--green)">✓ saved</span>':'')+'<input type="password" id="mpkey" value="" placeholder="'+(c.key?'•••••••• (leave empty to keep it)':'kss_…')+'" autocomplete="off" style="width:100%"></label></div>'
    +'<details class="small" style="margin-top:8px"><summary class="muted">Advanced: API address</summary><p class="muted" style="margin:6px 0">Only change this if your browser can’t reach MightPulse directly and you set up a relay.</p><input type="text" id="mpbase" value="'+esc(c.base)+'" style="width:100%"></details>'
+   +'<div class="row" style="margin-top:12px;gap:10px;align-items:center"><span><b>📊 Insights tab</b> <span class="muted small">— power growth, kills, roster check, player &amp; kingdom lookup</span></span><select data-sf="mpTab"><option value=""'+(state.mpTab?'':' selected')+'>Off</option><option value="r4"'+(state.mpTab==='r4'?' selected':'')+'>On — R4s only</option><option value="all"'+(state.mpTab==='all'?' selected':'')+'>On — everyone</option></select></div>'
    +'<div class="row" style="margin-top:10px;gap:8px"><button class="btn gold" data-act="mpsave">Save</button>'+(c.key?'<button class="btn" data-act="mptest">🔄 Sync now</button>':'')+'</div></div>';
   return h}
 function viewSettings(){
@@ -1413,6 +1478,8 @@ root.addEventListener('click',function(ev){
   var t=ev.target.closest('[data-act]'),a=t&&t.getAttribute('data-act');
   if(a==='closesharehelp'){ui.shareHelp=false;render();return}
   if(a==='seenwn'){lsSet('ks-seen-version',APP_VERSION);render();return}
+  var it=ev.target.closest('[data-ins]');if(it){ui.insTab=it.getAttribute('data-ins');render();return}
+  var idd=ev.target.closest('[data-insdays]');if(idd){ui.insDays=+idd.getAttribute('data-insdays');render();return}
   var stc=ev.target.closest('[data-sutc]');if(stc&&!stc.disabled){var tf=root.querySelector('[data-sufield=tc]');if(tf)ui.suTcVal=tf.value;saveMyTc();return}
   var su=ev.target.closest('[data-su]');if(su&&!su.disabled){ui.suNoteVal=(root.querySelector('[data-sufield=note]')||{}).value||ui.suNoteVal||'';var pf=root.querySelector('[data-sufield=power]');if(pf)ui.suPowerVal=pf.value;var ty=root.querySelector('[data-sufield=typed]');if(ty)ui.suTyped=ty.value;var sv=su.getAttribute('data-su').split('|');submitSignup(sv[0],sv[1]);return}
   var suc=ev.target.closest('[data-suc]');if(suc&&!suc.disabled){ui.suNoteVal=(root.querySelector('[data-sufield=note]')||{}).value||ui.suNoteVal||'';var pf2=root.querySelector('[data-sufield=power]');if(pf2)ui.suPowerVal=pf2.value;var ty2=root.querySelector('[data-sufield=typed]');if(ty2)ui.suTyped=ty2.value;submitSignup('vikings',suc.getAttribute('data-suc'));return}
