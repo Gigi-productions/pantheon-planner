@@ -612,13 +612,14 @@ function saveMp(c){ui.mp=c;if(CLOUD){if(!cloud.F||!cloud.user){toast('Log in as 
 function findRoster(o,depth){if(!o||typeof o!=='object'||depth>5)return null;if(Array.isArray(o)){if(o.length&&o[0]&&typeof o[0]==='object'&&('nick_name' in o[0]||'governor_id' in o[0])&&'power' in o[0])return o;for(var i=0;i<o.length;i++){var r=findRoster(o[i],depth+1);if(r)return r}return null}
   var keys=['roster','members','members_base','data','alliance','items'];for(var k=0;k<keys.length;k++)if(o[keys[k]]){var r2=findRoster(o[keys[k]],depth+1);if(r2)return r2}for(var kk in o){var r3=findRoster(o[kk],depth+1);if(r3)return r3}return null}
 function mpTc(v){if(v==null||v==='')return null;var g=String(v).match(/tg\s*(\d+)/i);if(g)return 30+(+g[1]);var n=parseInt(v,10);return n>0&&n<=40?n:null}
+function mpBase(b){b=String(b||MP_DEF.base).trim().replace(/\s+/g,'');if(!/^https?:\/\//i.test(b))b='https://'+b;var i=b.indexOf('/v1');if(i>=0)return b.slice(0,i+3);return b.replace(/\/+$/,'')+'/v1'}
 function mpSync(){
   var c=mpCfg();if(!c.key){toast('Add your MightPulse API key in Settings first');go('instellingen');return}
-  var url=String(c.base||MP_DEF.base).replace(/\/+$/,'')+'/alliances/'+encodeURIComponent(c.kid)+'/'+encodeURIComponent(c.tag)+'?include=roster';
+  var url=mpBase(c.base)+'/alliances/'+encodeURIComponent(c.kid)+'/'+encodeURIComponent(c.tag)+'?include=roster';
   ui.shot={busy:true,msg:'Fetching '+c.tag+' (kingdom '+c.kid+') from MightPulse…',rows:[]};render();
   var attempt=function(n){return fetch(url,{headers:{'Authorization':'Bearer '+c.key,'Accept':'application/json'}}).then(function(res){
       if(res.status===202&&n<3){var ra=Math.min(30,+res.headers.get('Retry-After')||5);ui.shot.msg='MightPulse is refreshing the data — trying again in '+ra+'s…';render();return new Promise(function(r){setTimeout(r,ra*1000)}).then(function(){return attempt(n+1)})}
-      if(!res.ok){var m=res.status===401?'API key not accepted — check it in Settings':res.status===404?'Alliance '+c.tag+' not found in kingdom '+c.kid+' (the tag is case-sensitive)':res.status===429?'Too many requests — wait a minute and try again':res.status===403?'This needs a Mighty (paid) key':'MightPulse error '+res.status;throw new Error(m)}
+      if(!res.ok){var m=res.status===401?'API key not accepted — check it in Settings':res.status===404?'Alliance '+c.tag+' not found in kingdom '+c.kid+' (the tag is case-sensitive)':res.status===429?'Too many requests — wait a minute and try again':res.status===403?(/workers\.dev/.test(url)?'The relay refused the request — check the planner address in the relay code':'This needs a Mighty (paid) key'):'MightPulse error '+res.status;throw new Error(m)}
       return res.json()})};
   attempt(0).then(function(data){var R=findRoster(data,0)||[];
     var rows=R.map(function(x){return {name:String(x.nick_name||x.name||'').trim(),power:+x.power||0,tc:mpTc(x.town_center_level!=null?x.town_center_level:x.tc),gid:String(x.governor_id||x.fid||x.uid||''),rank:x.alliance_rank_label||''}}).filter(function(r){return r.name||r.gid});
@@ -1223,7 +1224,7 @@ root.addEventListener('click',function(ev){
     return touch();
   }
   if(act==='mpsync'){if(!ui.mp)loadMp();var wait=function(n){if(ui.mp||n>20)return mpSync();setTimeout(function(){wait(n+1)},150)};wait(0);return}
-  if(act==='mpsave'){var fm=function(id){return ((root.querySelector('#'+id)||{}).value||'').trim()};var c={kid:fm('mpkid')||MP_DEF.kid,tag:fm('mptag')||MP_DEF.tag,base:fm('mpbase')||MP_DEF.base,key:fm('mpkey')||(ui.mp&&ui.mp.key)||''};saveMp(c);return render()}
+  if(act==='mpsave'){var fm=function(id){return ((root.querySelector('#'+id)||{}).value||'').trim()};var c={kid:fm('mpkid')||MP_DEF.kid,tag:fm('mptag')||MP_DEF.tag,base:mpBase(fm('mpbase')||MP_DEF.base),key:fm('mpkey')||(ui.mp&&ui.mp.key)||''};saveMp(c);return render()}
   if(act==='mptest'){mpSync();go('leden');return}
   if(act==='selclear'){ui.msel={};return render()}
   if(act==='seladd'){var se=root.querySelector('#selev'),E2=se&&ev_(se.value);if(!E2)return;ui.selEv=E2.id;var ids=Object.keys(ui.msel||{}).filter(member),added=0;
